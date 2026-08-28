@@ -3,13 +3,113 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Item {
+    id: containersPage
+
     Component.onCompleted: apiClient.fetchContainers()
+
+    function openContainerDetail(id) {
+        detailErrorLabel.visible = false
+        apiClient.fetchContainerDetail(id)
+        containerDetailDialog.open()
+    }
 
     Connections {
         target: apiClient
         function onContainersErrorOccurred(message) {
             errorLabel.text = message
             errorLabel.visible = true
+        }
+        function onContainerDetailErrorOccurred(message) {
+            detailErrorLabel.text = message
+            detailErrorLabel.visible = true
+        }
+    }
+
+    Dialog {
+        id: containerDetailDialog
+        objectName: "containerDetailDialog"
+        modal: true
+        standardButtons: Dialog.Close
+        width: 600
+        anchors.centerIn: Overlay.overlay
+        title: apiClient.containerDetail.name || qsTr("Container")
+
+        contentItem: ScrollView {
+            implicitWidth: 560
+            implicitHeight: 400
+            clip: true
+
+            ColumnLayout {
+                width: 560
+                spacing: 4
+
+                Label {
+                    visible: apiClient.containerDetailBusy
+                    text: qsTr("Loading...")
+                }
+
+                Label {
+                    id: detailErrorLabel
+                    visible: false
+                    color: "red"
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+
+                ColumnLayout {
+                    visible: !apiClient.containerDetailBusy
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    Label { text: qsTr("Id: %1").arg(apiClient.containerDetail.id); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    Label { text: qsTr("Image: %1").arg(apiClient.containerDetail.image); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    Label { text: qsTr("State: %1").arg(apiClient.containerDetail.state) }
+                    Label { text: qsTr("Started: %1").arg(apiClient.containerDetail.startedAt); visible: !!apiClient.containerDetail.startedAt }
+                    Label { text: qsTr("Created: %1").arg(apiClient.containerDetail.created) }
+                    Label { text: qsTr("Command: %1").arg(apiClient.containerDetail.command); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.containerDetail.command }
+                    Label { text: qsTr("Working Dir: %1").arg(apiClient.containerDetail.workingDir); visible: !!apiClient.containerDetail.workingDir }
+                    Label { text: qsTr("Restart Policy: %1").arg(apiClient.containerDetail.restartPolicy); visible: !!apiClient.containerDetail.restartPolicy }
+
+                    Label { text: qsTr("Ports"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.containerDetail.ports || apiClient.containerDetail.ports.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.containerDetail.ports || []
+                        delegate: Label { required property string modelData; text: modelData }
+                    }
+
+                    Label { text: qsTr("Networks"); font.bold: true; Layout.topMargin: 8 }
+                    Repeater {
+                        model: apiClient.containerDetail.networks || []
+                        delegate: Label { required property string modelData; text: modelData }
+                    }
+
+                    Label { text: qsTr("Mounts"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.containerDetail.mounts || apiClient.containerDetail.mounts.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.containerDetail.mounts || []
+                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    }
+
+                    Label { text: qsTr("Environment"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.containerDetail.env || apiClient.containerDetail.env.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.containerDetail.env || []
+                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    }
+                }
+            }
         }
     }
 
@@ -63,6 +163,11 @@ Item {
                 model: apiClient.containersModel
 
                 delegate: Frame {
+                    id: containerRowDelegate
+                    required property string containerId
+                    required property string names
+                    required property string image
+                    required property string status
                     width: containersList.width
 
                     ColumnLayout {
@@ -70,23 +175,28 @@ Item {
                         spacing: 2
 
                         Label {
-                            text: names
+                            text: containerRowDelegate.names
                             font.bold: true
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
 
                         Label {
-                            text: qsTr("Image: %1").arg(image)
+                            text: qsTr("Image: %1").arg(containerRowDelegate.image)
                             font.pixelSize: 12
                             opacity: 0.7
                         }
 
                         Label {
-                            text: qsTr("Status: %1").arg(status)
+                            text: qsTr("Status: %1").arg(containerRowDelegate.status)
                             font.pixelSize: 12
                             opacity: 0.7
                         }
+                    }
+
+                    TapHandler {
+                        cursorShape: Qt.PointingHandCursor
+                        onTapped: containersPage.openContainerDetail(containerRowDelegate.containerId)
                     }
                 }
             }
@@ -201,6 +311,11 @@ Item {
                                                             font.pixelSize: 12
                                                             opacity: 0.7
                                                         }
+                                                    }
+
+                                                    TapHandler {
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onTapped: containersPage.openContainerDetail(containerDelegate.modelData.id)
                                                     }
                                                 }
                                             }
