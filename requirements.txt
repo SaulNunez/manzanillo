@@ -1,1 +1,3 @@
 PySide6
+httpx
+qasync

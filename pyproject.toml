@@ -1,5 +1,14 @@
 [project]
 name = "PySide QtQuick Project"
+dependencies = ["PySide6", "httpx", "qasync"]
 
 [tool.pyside6-project]
-files = ["main.py", "manzanillo/Main.qml", "manzanillo/qmldir"]
+files = [
+    "main.py",
+    "api_client.py",
+    "manzanillo/Main.qml",
+    "manzanillo/ContainersPage.qml",
+    "manzanillo/ImagesPage.qml",
+    "manzanillo/VolumesPage.qml",
+    "manzanillo/qmldir",
+]
