@@ -18,7 +18,7 @@ Window {
             objectName: "navList"
             Layout.preferredWidth: 180
             Layout.fillHeight: true
-            model: [qsTr("Containers"), qsTr("Images"), qsTr("Volumes")]
+            model: [qsTr("Containers"), qsTr("Images"), qsTr("Volumes"), qsTr("Settings")]
             currentIndex: 0
             delegate: ItemDelegate {
                 objectName: "navItem_" + index
@@ -37,6 +37,7 @@ Window {
             ContainersPage {}
             ImagesPage {}
             VolumesPage {}
+            SettingsPage {}
         }
     }
 }

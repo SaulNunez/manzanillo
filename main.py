@@ -4,12 +4,13 @@ import sys
 from pathlib import Path
 
 import qasync
+from PySide6.QtCore import QSettings
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 
-from api_client import ApiClient
+from api_client import SETTINGS_APP, SETTINGS_ORG, SOCKET_PATH_SETTING_KEY, ApiClient
 
-SOCKET_PATH = "/var/run/docker.sock"
+DEFAULT_SOCKET_PATH = "/var/run/docker.sock"
 
 
 if __name__ == "__main__":
@@ -20,7 +21,10 @@ if __name__ == "__main__":
     engine = QQmlApplicationEngine()
     engine.addImportPath(Path(__file__).parent)
 
-    api_client = ApiClient(SOCKET_PATH)
+    settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
+    socket_path = settings.value(SOCKET_PATH_SETTING_KEY, DEFAULT_SOCKET_PATH)
+
+    api_client = ApiClient(socket_path)
     engine.rootContext().setContextProperty("apiClient", api_client)
 
     engine.loadFromModule("manzanillo", "Main")

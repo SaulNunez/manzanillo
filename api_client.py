@@ -8,10 +8,15 @@ from PySide6.QtCore import (
     QAbstractListModel,
     QModelIndex,
     QObject,
+    QSettings,
     Qt,
     Signal,
     Slot,
 )
+
+SETTINGS_ORG = "manzanillo"
+SETTINGS_APP = "manzanillo"
+SOCKET_PATH_SETTING_KEY = "socketPath"
 
 
 class ImageListModel(QAbstractListModel):
@@ -219,17 +224,79 @@ class ApiClient(QObject):
     volumesErrorOccurred = Signal(str)
     volumesBusyChanged = Signal()
 
+    socketPathChanged = Signal(str)
+    connectionTestBusyChanged = Signal()
+    connectionTestSucceeded = Signal(str)
+    connectionTestFailed = Signal(str)
+
     def __init__(self, socket_path: str, base_url: str = "http://localhost", parent=None):
         super().__init__(parent)
-        transport = httpx.AsyncHTTPTransport(uds=socket_path)
-        self._client = httpx.AsyncClient(transport=transport, base_url=base_url, timeout=5.0)
+        self._base_url = base_url
+        self._socket_path = socket_path
+        self._client = self._build_client(socket_path)
         self._containers_busy = False
         self._images_busy = False
         self._volumes_busy = False
+        self._connection_test_busy = False
         self._containers_model = ContainerListModel(self)
         self._images_model = ImageListModel(self)
         self._volumes_model = VolumeListModel(self)
         self._compose_projects = []
+
+    def _build_client(self, socket_path: str) -> httpx.AsyncClient:
+        transport = httpx.AsyncHTTPTransport(uds=socket_path)
+        return httpx.AsyncClient(transport=transport, base_url=self._base_url, timeout=5.0)
+
+    @Property(str, notify=socketPathChanged)
+    def socketPath(self):
+        return self._socket_path
+
+    @Slot(str)
+    def setSocketPath(self, path: str):
+        asyncio.ensure_future(self._set_socket_path(path))
+
+    async def _set_socket_path(self, path: str):
+        path = path.strip()
+        if not path or path == self._socket_path:
+            return
+
+        old_client = self._client
+        self._client = self._build_client(path)
+        self._socket_path = path
+
+        settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
+        settings.setValue(SOCKET_PATH_SETTING_KEY, path)
+
+        self.socketPathChanged.emit(path)
+        asyncio.ensure_future(self._fetch_containers())
+        asyncio.ensure_future(self._fetch_images())
+        asyncio.ensure_future(self._fetch_volumes())
+
+        await old_client.aclose()
+
+    @Property(bool, notify=connectionTestBusyChanged)
+    def connectionTestBusy(self):
+        return self._connection_test_busy
+
+    def _set_connection_test_busy(self, value: bool):
+        if self._connection_test_busy != value:
+            self._connection_test_busy = value
+            self.connectionTestBusyChanged.emit()
+
+    @Slot()
+    def testConnection(self):
+        asyncio.ensure_future(self._test_connection())
+
+    async def _test_connection(self):
+        self._set_connection_test_busy(True)
+        try:
+            response = await self._client.get("/version")
+            response.raise_for_status()
+            self.connectionTestSucceeded.emit(response.json().get("Version", "unknown"))
+        except (httpx.HTTPError, OSError) as error:
+            self.connectionTestFailed.emit(str(error))
+        finally:
+            self._set_connection_test_busy(False)
 
     @Property(bool, notify=containersBusyChanged)
     def containersBusy(self):

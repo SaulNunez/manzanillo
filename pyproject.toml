@@ -10,5 +10,6 @@ files = [
     "manzanillo/ContainersPage.qml",
     "manzanillo/ImagesPage.qml",
     "manzanillo/VolumesPage.qml",
+    "manzanillo/SettingsPage.qml",
     "manzanillo/qmldir",
 ]
