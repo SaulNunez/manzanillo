@@ -45,6 +45,7 @@ class ImageListModel(QAbstractListModel):
     TagsRole = Qt.UserRole + 2
     SizeRole = Qt.UserRole + 3
     CreatedRole = Qt.UserRole + 4
+    InUseRole = Qt.UserRole + 5
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -56,6 +57,7 @@ class ImageListModel(QAbstractListModel):
             self.TagsRole: b"tags",
             self.SizeRole: b"size",
             self.CreatedRole: b"created",
+            self.InUseRole: b"inUse",
         }
 
     def rowCount(self, parent=QModelIndex()):
@@ -76,6 +78,8 @@ class ImageListModel(QAbstractListModel):
         if role == self.CreatedRole:
             created = image.get("Created")
             return datetime.fromtimestamp(created).strftime("%Y-%m-%d %H:%M") if created else ""
+        if role == self.InUseRole:
+            return image.get("Containers", 0) > 0
         return None
 
     def set_images(self, images: list[dict]):
@@ -324,6 +328,9 @@ class ApiClient(QObject):
     imagesErrorOccurred = Signal(str)
     imagesBusyChanged = Signal()
 
+    imageActionBusyChanged = Signal()
+    imageActionErrorOccurred = Signal(str)
+
     volumesErrorOccurred = Signal(str)
     volumesBusyChanged = Signal()
 
@@ -347,6 +354,7 @@ class ApiClient(QObject):
         self._container_detail_busy = False
         self._container_action_busy = False
         self._volume_action_busy = False
+        self._image_action_busy = False
         self._containers_model = ContainerListModel(self)
         self._containers_filter_model = ContainerFilterProxyModel(self)
         self._containers_filter_model.setSourceModel(self._containers_model)
@@ -549,6 +557,30 @@ class ApiClient(QObject):
             self.imagesErrorOccurred.emit(str(error))
         finally:
             self._set_images_busy(False)
+
+    @Property(bool, notify=imageActionBusyChanged)
+    def imageActionBusy(self):
+        return self._image_action_busy
+
+    def _set_image_action_busy(self, value: bool):
+        if self._image_action_busy != value:
+            self._image_action_busy = value
+            self.imageActionBusyChanged.emit()
+
+    @Slot(str)
+    def deleteImage(self, image_id: str):
+        asyncio.ensure_future(self._delete_image(image_id))
+
+    async def _delete_image(self, image_id: str):
+        self._set_image_action_busy(True)
+        try:
+            response = await self._client.delete(f"/images/{image_id}")
+            response.raise_for_status()
+            await self._fetch_images()
+        except (httpx.HTTPError, OSError) as error:
+            self.imageActionErrorOccurred.emit(_error_message(error))
+        finally:
+            self._set_image_action_busy(False)
 
     @Slot()
     def fetchVolumes(self):
