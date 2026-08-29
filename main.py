@@ -1,12 +1,16 @@
 # This Python file uses the following encoding: utf-8
 import asyncio
+import os
 import sys
 from pathlib import Path
 
+os.environ.setdefault("QT_QPA_PLATFORMTHEME", "xdgdesktopportal")
+
 import qasync
 from PySide6.QtCore import QSettings
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtWidgets import QApplication
 
 from api_client import SETTINGS_APP, SETTINGS_ORG, SOCKET_PATH_SETTING_KEY, ApiClient
 
@@ -14,7 +18,8 @@ DEFAULT_SOCKET_PATH = "/var/run/docker.sock"
 
 
 if __name__ == "__main__":
-    app = QGuiApplication(sys.argv)
+    app = QApplication(sys.argv)
+    QQuickStyle.setStyle("Fusion")
     loop = qasync.QEventLoop(app)
     asyncio.set_event_loop(loop)
 
