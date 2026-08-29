@@ -13,6 +13,18 @@ Item {
         deleteImageDialog.open()
     }
 
+    function openPullImageDialog() {
+        pullReferenceField.text = ""
+        pullImageDialog.open()
+    }
+
+    function openTagImageDialog(id) {
+        tagImageDialog.imageId = id
+        tagRepositoryField.text = ""
+        tagTagField.text = ""
+        tagImageDialog.open()
+    }
+
     Connections {
         target: apiClient
         function onImagesErrorOccurred(message) {
@@ -46,6 +58,79 @@ Item {
         }
     }
 
+    Dialog {
+        id: pullImageDialog
+        objectName: "pullImageDialog"
+
+        modal: true
+        title: qsTr("Pull image")
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        width: 400
+        anchors.centerIn: Overlay.overlay
+
+        onAccepted: apiClient.pullImage(pullReferenceField.text.trim())
+
+        contentItem: ColumnLayout {
+            width: pullImageDialog.availableWidth
+            spacing: 8
+
+            Label {
+                text: qsTr("Image reference")
+                Layout.fillWidth: true
+            }
+
+            TextField {
+                id: pullReferenceField
+                objectName: "pullReferenceField"
+                Layout.fillWidth: true
+                placeholderText: qsTr("e.g. redis:8.6.2")
+            }
+        }
+    }
+
+    Dialog {
+        id: tagImageDialog
+        objectName: "tagImageDialog"
+        property string imageId: ""
+
+        modal: true
+        title: qsTr("Add tag")
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        width: 400
+        anchors.centerIn: Overlay.overlay
+
+        onAccepted: apiClient.tagImage(tagImageDialog.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+
+        contentItem: ColumnLayout {
+            width: tagImageDialog.availableWidth
+            spacing: 8
+
+            Label {
+                text: qsTr("Repository")
+                Layout.fillWidth: true
+            }
+
+            TextField {
+                id: tagRepositoryField
+                objectName: "tagRepositoryField"
+                Layout.fillWidth: true
+                placeholderText: qsTr("e.g. myrepo/myimage")
+            }
+
+            Label {
+                text: qsTr("Tag (optional, defaults to \"latest\")")
+                Layout.fillWidth: true
+            }
+
+            TextField {
+                id: tagTagField
+                objectName: "tagTagField"
+                Layout.fillWidth: true
+                placeholderText: qsTr("latest")
+            }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12
@@ -58,6 +143,12 @@ Item {
                 text: qsTr("Images")
                 font.pixelSize: 20
                 Layout.fillWidth: true
+            }
+
+            Button {
+                text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
+                enabled: !apiClient.imageActionBusy
+                onClicked: imagesPage.openPullImageDialog()
             }
 
             Button {
@@ -128,11 +219,22 @@ Item {
                         }
                     }
 
-                    Button {
-                        objectName: "deleteImageButton_" + imageRowDelegate.imageId
-                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                        enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
-                        onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
+                    ColumnLayout {
+                        spacing: 4
+
+                        Button {
+                            objectName: "tagImageButton_" + imageRowDelegate.imageId
+                            text: qsTr("Tag")
+                            enabled: !apiClient.imageActionBusy
+                            onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
+                        }
+
+                        Button {
+                            objectName: "deleteImageButton_" + imageRowDelegate.imageId
+                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
+                            enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
+                            onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
+                        }
                     }
                 }
             }

@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import asyncio
+import json
 from datetime import datetime
 
 import httpx
@@ -575,6 +576,56 @@ class ApiClient(QObject):
         self._set_image_action_busy(True)
         try:
             response = await self._client.delete(f"/images/{image_id}")
+            response.raise_for_status()
+            await self._fetch_images()
+        except (httpx.HTTPError, OSError) as error:
+            self.imageActionErrorOccurred.emit(_error_message(error))
+        finally:
+            self._set_image_action_busy(False)
+
+    @Slot(str)
+    def pullImage(self, reference: str):
+        asyncio.ensure_future(self._pull_image(reference))
+
+    async def _pull_image(self, reference: str):
+        self._set_image_action_busy(True)
+        try:
+            # Pulling has no fixed time budget - it depends on image size and network
+            # speed - so the request timeout is disabled rather than reusing the
+            # client's normal 5s default.
+            async with self._client.stream(
+                "POST", "/images/create", params={"fromImage": reference}, timeout=None
+            ) as response:
+                response.raise_for_status()
+                pull_error = None
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        payload = json.loads(line)
+                    except ValueError:
+                        continue
+                    if "error" in payload:
+                        pull_error = payload["error"]
+                if pull_error:
+                    raise RuntimeError(pull_error)
+            await self._fetch_images()
+        except (httpx.HTTPError, OSError, RuntimeError) as error:
+            self.imageActionErrorOccurred.emit(_error_message(error))
+        finally:
+            self._set_image_action_busy(False)
+
+    @Slot(str, str, str)
+    def tagImage(self, image_id: str, repository: str, tag: str):
+        asyncio.ensure_future(self._tag_image(image_id, repository, tag))
+
+    async def _tag_image(self, image_id: str, repository: str, tag: str):
+        self._set_image_action_busy(True)
+        try:
+            params = {"repo": repository}
+            if tag:
+                params["tag"] = tag
+            response = await self._client.post(f"/images/{image_id}/tag", params=params)
             response.raise_for_status()
             await self._fetch_images()
         except (httpx.HTTPError, OSError) as error:
