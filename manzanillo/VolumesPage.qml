@@ -3,13 +3,44 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Item {
+    id: volumesPage
+
     Component.onCompleted: apiClient.fetchVolumes()
+
+    function confirmDeleteVolume(name) {
+        deleteVolumeDialog.volumeName = name
+        deleteVolumeDialog.open()
+    }
 
     Connections {
         target: apiClient
         function onVolumesErrorOccurred(message) {
             errorLabel.text = message
             errorLabel.visible = true
+        }
+        function onVolumeActionErrorOccurred(message) {
+            errorLabel.text = message
+            errorLabel.visible = true
+        }
+    }
+
+    Dialog {
+        id: deleteVolumeDialog
+        objectName: "deleteVolumeDialog"
+        property string volumeName: ""
+
+        modal: true
+        title: qsTr("Delete volume")
+        standardButtons: Dialog.Yes | Dialog.No
+        width: 360
+        anchors.centerIn: Overlay.overlay
+
+        onAccepted: apiClient.deleteVolume(deleteVolumeDialog.volumeName)
+
+        contentItem: Label {
+            text: qsTr("Delete volume \"%1\"? This cannot be undone.").arg(deleteVolumeDialog.volumeName)
+            wrapMode: Text.WordWrap
+            width: deleteVolumeDialog.availableWidth
         }
     }
 
@@ -57,31 +88,56 @@ Item {
             model: apiClient.volumesModel
 
             delegate: Frame {
+                id: volumeRowDelegate
+                required property string name
+                required property string driver
+                required property string mountpoint
+                required property string created
+                required property bool inUse
                 width: volumesList.width
 
-                ColumnLayout {
+                RowLayout {
                     anchors.fill: parent
-                    spacing: 2
+                    spacing: 8
 
-                    Label {
-                        text: name
-                        font.bold: true
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        elide: Text.ElideRight
+                        spacing: 2
+
+                        Label {
+                            text: volumeRowDelegate.name
+                            font.bold: true
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+
+                        Label {
+                            text: qsTr("Driver: %1    Created: %2").arg(volumeRowDelegate.driver).arg(volumeRowDelegate.created)
+                            font.pixelSize: 12
+                            opacity: 0.7
+                        }
+
+                        Label {
+                            text: volumeRowDelegate.mountpoint
+                            font.pixelSize: 12
+                            opacity: 0.7
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+
+                        Label {
+                            text: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                            font.pixelSize: 12
+                            font.italic: true
+                            color: volumeRowDelegate.inUse ? palette.text : "gray"
+                        }
                     }
 
-                    Label {
-                        text: qsTr("Driver: %1    Created: %2").arg(driver).arg(created)
-                        font.pixelSize: 12
-                        opacity: 0.7
-                    }
-
-                    Label {
-                        text: mountpoint
-                        font.pixelSize: 12
-                        opacity: 0.7
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
+                    Button {
+                        objectName: "deleteVolumeButton_" + volumeRowDelegate.name
+                        text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
+                        enabled: !apiClient.volumeActionBusy && !volumeRowDelegate.inUse
+                        onClicked: volumesPage.confirmDeleteVolume(volumeRowDelegate.name)
                     }
                 }
             }

@@ -20,6 +20,13 @@ SOCKET_PATH_SETTING_KEY = "socketPath"
 
 
 def _error_message(error: Exception) -> str:
+    if isinstance(error, httpx.HTTPStatusError):
+        try:
+            detail = error.response.json().get("message")
+            if detail:
+                return detail
+        except ValueError:
+            pass
     return str(error) or type(error).__name__
 
 
@@ -230,6 +237,7 @@ class VolumeListModel(QAbstractListModel):
     DriverRole = Qt.UserRole + 2
     MountpointRole = Qt.UserRole + 3
     CreatedRole = Qt.UserRole + 4
+    InUseRole = Qt.UserRole + 5
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -241,6 +249,7 @@ class VolumeListModel(QAbstractListModel):
             self.DriverRole: b"driver",
             self.MountpointRole: b"mountpoint",
             self.CreatedRole: b"created",
+            self.InUseRole: b"inUse",
         }
 
     def rowCount(self, parent=QModelIndex()):
@@ -259,6 +268,8 @@ class VolumeListModel(QAbstractListModel):
             return volume.get("Mountpoint", "")
         if role == self.CreatedRole:
             return _format_timestamp(volume.get("CreatedAt"))
+        if role == self.InUseRole:
+            return (volume.get("UsageData") or {}).get("RefCount", 0) > 0
         return None
 
     def set_volumes(self, volumes: list[dict]):
@@ -285,6 +296,9 @@ class ApiClient(QObject):
     volumesErrorOccurred = Signal(str)
     volumesBusyChanged = Signal()
 
+    volumeActionBusyChanged = Signal()
+    volumeActionErrorOccurred = Signal(str)
+
     socketPathChanged = Signal(str)
     connectionTestBusyChanged = Signal()
     connectionTestSucceeded = Signal(str)
@@ -301,6 +315,7 @@ class ApiClient(QObject):
         self._connection_test_busy = False
         self._container_detail_busy = False
         self._container_action_busy = False
+        self._volume_action_busy = False
         self._containers_model = ContainerListModel(self)
         self._images_model = ImageListModel(self)
         self._volumes_model = VolumeListModel(self)
@@ -505,13 +520,40 @@ class ApiClient(QObject):
     async def _fetch_volumes(self):
         self._set_volumes_busy(True)
         try:
-            response = await self._client.get("/volumes")
+            # /system/df (rather than /volumes) is used because it's the only Docker
+            # Engine endpoint that reports UsageData.RefCount, which is how we know
+            # whether a volume is currently attached to any container.
+            response = await self._client.get("/system/df", params={"type": "volume"})
             response.raise_for_status()
             self._volumes_model.set_volumes(response.json().get("Volumes") or [])
         except (httpx.HTTPError, OSError) as error:
             self.volumesErrorOccurred.emit(str(error))
         finally:
             self._set_volumes_busy(False)
+
+    @Property(bool, notify=volumeActionBusyChanged)
+    def volumeActionBusy(self):
+        return self._volume_action_busy
+
+    def _set_volume_action_busy(self, value: bool):
+        if self._volume_action_busy != value:
+            self._volume_action_busy = value
+            self.volumeActionBusyChanged.emit()
+
+    @Slot(str)
+    def deleteVolume(self, name: str):
+        asyncio.ensure_future(self._delete_volume(name))
+
+    async def _delete_volume(self, name: str):
+        self._set_volume_action_busy(True)
+        try:
+            response = await self._client.delete(f"/volumes/{name}")
+            response.raise_for_status()
+            await self._fetch_volumes()
+        except (httpx.HTTPError, OSError) as error:
+            self.volumeActionErrorOccurred.emit(_error_message(error))
+        finally:
+            self._set_volume_action_busy(False)
 
     async def close(self):
         await self._client.aclose()
