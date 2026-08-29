@@ -26,6 +26,8 @@ Item {
         function onContainerActionErrorOccurred(message) {
             detailErrorLabel.text = message
             detailErrorLabel.visible = true
+            errorLabel.text = message
+            errorLabel.visible = true
         }
     }
 
@@ -184,6 +186,7 @@ Item {
 
             ListView {
                 id: containersList
+                objectName: "containersListView"
                 clip: true
                 spacing: 4
                 model: apiClient.containersModel
@@ -194,29 +197,46 @@ Item {
                     required property string names
                     required property string image
                     required property string status
+                    required property string state
                     width: containersList.width
 
-                    ColumnLayout {
+                    RowLayout {
                         anchors.fill: parent
-                        spacing: 2
+                        spacing: 8
 
-                        Label {
-                            text: containerRowDelegate.names
-                            font.bold: true
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            elide: Text.ElideRight
+                            spacing: 2
+
+                            Label {
+                                text: containerRowDelegate.names
+                                font.bold: true
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+
+                            Label {
+                                text: qsTr("Image: %1").arg(containerRowDelegate.image)
+                                font.pixelSize: 12
+                                opacity: 0.7
+                            }
+
+                            Label {
+                                text: qsTr("Status: %1").arg(containerRowDelegate.status)
+                                font.pixelSize: 12
+                                opacity: 0.7
+                            }
                         }
 
-                        Label {
-                            text: qsTr("Image: %1").arg(containerRowDelegate.image)
-                            font.pixelSize: 12
-                            opacity: 0.7
-                        }
-
-                        Label {
-                            text: qsTr("Status: %1").arg(containerRowDelegate.status)
-                            font.pixelSize: 12
-                            opacity: 0.7
+                        Button {
+                            objectName: "quickActionButton_" + containerRowDelegate.containerId
+                            text: apiClient.containerActionBusy
+                                ? qsTr("Working...")
+                                : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
+                            enabled: !apiClient.containerActionBusy
+                            onClicked: containerRowDelegate.state === "running"
+                                ? apiClient.stopContainer(containerRowDelegate.containerId)
+                                : apiClient.startContainer(containerRowDelegate.containerId)
                         }
                     }
 
@@ -317,25 +337,41 @@ Item {
                                                     required property var modelData
                                                     Layout.fillWidth: true
 
-                                                    ColumnLayout {
+                                                    RowLayout {
                                                         anchors.fill: parent
-                                                        spacing: 2
+                                                        spacing: 8
 
-                                                        Label {
-                                                            text: containerDelegate.modelData.name
-                                                            font.bold: true
+                                                        ColumnLayout {
+                                                            Layout.fillWidth: true
+                                                            spacing: 2
+
+                                                            Label {
+                                                                text: containerDelegate.modelData.name
+                                                                font.bold: true
+                                                            }
+
+                                                            Label {
+                                                                text: qsTr("Image: %1").arg(containerDelegate.modelData.image)
+                                                                font.pixelSize: 12
+                                                                opacity: 0.7
+                                                            }
+
+                                                            Label {
+                                                                text: qsTr("Status: %1").arg(containerDelegate.modelData.status)
+                                                                font.pixelSize: 12
+                                                                opacity: 0.7
+                                                            }
                                                         }
 
-                                                        Label {
-                                                            text: qsTr("Image: %1").arg(containerDelegate.modelData.image)
-                                                            font.pixelSize: 12
-                                                            opacity: 0.7
-                                                        }
-
-                                                        Label {
-                                                            text: qsTr("Status: %1").arg(containerDelegate.modelData.status)
-                                                            font.pixelSize: 12
-                                                            opacity: 0.7
+                                                        Button {
+                                                            objectName: "quickActionButton_" + containerDelegate.modelData.id
+                                                            text: apiClient.containerActionBusy
+                                                                ? qsTr("Working...")
+                                                                : (containerDelegate.modelData.state === "running" ? qsTr("Stop") : qsTr("Start"))
+                                                            enabled: !apiClient.containerActionBusy
+                                                            onClicked: containerDelegate.modelData.state === "running"
+                                                                ? apiClient.stopContainer(containerDelegate.modelData.id)
+                                                                : apiClient.startContainer(containerDelegate.modelData.id)
                                                         }
                                                     }
 
