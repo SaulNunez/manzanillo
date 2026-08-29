@@ -13,6 +13,26 @@ Item {
         containerDetailDialog.open()
     }
 
+    // Compose project/service expand state is kept here, keyed by name, instead of as
+    // local delegate state - the Compose tree's Repeaters get rebuilt from scratch on
+    // every containers refresh (e.g. after a quick start/stop action), which would
+    // otherwise reset every delegate's local "expanded" property back to false.
+    property var expandedProjects: ({})
+    property var expandedServices: ({})
+
+    function toggleProjectExpanded(project) {
+        const updated = Object.assign({}, expandedProjects)
+        updated[project] = !updated[project]
+        expandedProjects = updated
+    }
+
+    function toggleServiceExpanded(project, service) {
+        const key = project + "/" + service
+        const updated = Object.assign({}, expandedServices)
+        updated[key] = !updated[key]
+        expandedServices = updated
+    }
+
     Connections {
         target: apiClient
         function onContainersErrorOccurred(message) {
@@ -268,7 +288,7 @@ Item {
                             id: projectDelegate
                             required property var modelData
                             required property int index
-                            property bool expanded: false
+                            readonly property bool expanded: containersPage.expandedProjects[projectDelegate.modelData.project] === true
 
                             Layout.fillWidth: true
                             spacing: 2
@@ -279,7 +299,7 @@ Item {
                                 ToolButton {
                                     objectName: "projectToggle_" + projectDelegate.index
                                     text: projectDelegate.expanded ? "▼" : "▶"
-                                    onClicked: projectDelegate.expanded = !projectDelegate.expanded
+                                    onClicked: containersPage.toggleProjectExpanded(projectDelegate.modelData.project)
                                 }
 
                                 Label {
@@ -303,7 +323,7 @@ Item {
                                         id: serviceDelegate
                                         required property var modelData
                                         required property int index
-                                        property bool expanded: false
+                                        readonly property bool expanded: containersPage.expandedServices[projectDelegate.modelData.project + "/" + serviceDelegate.modelData.service] === true
 
                                         Layout.fillWidth: true
                                         spacing: 2
@@ -314,7 +334,7 @@ Item {
                                             ToolButton {
                                                 objectName: "serviceToggle_" + serviceDelegate.index
                                                 text: serviceDelegate.expanded ? "▼" : "▶"
-                                                onClicked: serviceDelegate.expanded = !serviceDelegate.expanded
+                                                onClicked: containersPage.toggleServiceExpanded(projectDelegate.modelData.project, serviceDelegate.modelData.service)
                                             }
 
                                             Label {
