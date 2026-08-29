@@ -23,6 +23,10 @@ Item {
             detailErrorLabel.text = message
             detailErrorLabel.visible = true
         }
+        function onContainerActionErrorOccurred(message) {
+            detailErrorLabel.text = message
+            detailErrorLabel.visible = true
+        }
     }
 
     Dialog {
@@ -64,6 +68,28 @@ Item {
                     Label { text: qsTr("Id: %1").arg(apiClient.containerDetail.id); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     Label { text: qsTr("Image: %1").arg(apiClient.containerDetail.image); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     Label { text: qsTr("State: %1").arg(apiClient.containerDetail.state) }
+
+                    RowLayout {
+                        spacing: 8
+                        Layout.topMargin: 4
+
+                        Button {
+                            objectName: "startContainerButton"
+                            text: apiClient.containerActionBusy ? qsTr("Working...") : qsTr("Start")
+                            visible: apiClient.containerDetail.state !== "running"
+                            enabled: !apiClient.containerActionBusy && !apiClient.containerDetailBusy
+                            onClicked: apiClient.startContainer(apiClient.containerDetail.id)
+                        }
+
+                        Button {
+                            objectName: "stopContainerButton"
+                            text: apiClient.containerActionBusy ? qsTr("Working...") : qsTr("Stop")
+                            visible: apiClient.containerDetail.state === "running"
+                            enabled: !apiClient.containerActionBusy && !apiClient.containerDetailBusy
+                            onClicked: apiClient.stopContainer(apiClient.containerDetail.id)
+                        }
+                    }
+
                     Label { text: qsTr("Started: %1").arg(apiClient.containerDetail.startedAt); visible: !!apiClient.containerDetail.startedAt }
                     Label { text: qsTr("Created: %1").arg(apiClient.containerDetail.created) }
                     Label { text: qsTr("Command: %1").arg(apiClient.containerDetail.command); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.containerDetail.command }

@@ -19,6 +19,10 @@ SETTINGS_APP = "manzanillo"
 SOCKET_PATH_SETTING_KEY = "socketPath"
 
 
+def _error_message(error: Exception) -> str:
+    return str(error) or type(error).__name__
+
+
 def _format_timestamp(value) -> str:
     if not value:
         return ""
@@ -272,6 +276,9 @@ class ApiClient(QObject):
     containerDetailBusyChanged = Signal()
     containerDetailErrorOccurred = Signal(str)
 
+    containerActionBusyChanged = Signal()
+    containerActionErrorOccurred = Signal(str)
+
     imagesErrorOccurred = Signal(str)
     imagesBusyChanged = Signal()
 
@@ -293,6 +300,7 @@ class ApiClient(QObject):
         self._volumes_busy = False
         self._connection_test_busy = False
         self._container_detail_busy = False
+        self._container_action_busy = False
         self._containers_model = ContainerListModel(self)
         self._images_model = ImageListModel(self)
         self._volumes_model = VolumeListModel(self)
@@ -443,6 +451,37 @@ class ApiClient(QObject):
             self.containerDetailErrorOccurred.emit(str(error))
         finally:
             self._set_container_detail_busy(False)
+
+    @Property(bool, notify=containerActionBusyChanged)
+    def containerActionBusy(self):
+        return self._container_action_busy
+
+    def _set_container_action_busy(self, value: bool):
+        if self._container_action_busy != value:
+            self._container_action_busy = value
+            self.containerActionBusyChanged.emit()
+
+    @Slot(str)
+    def startContainer(self, container_id: str):
+        asyncio.ensure_future(self._container_action(container_id, "start"))
+
+    @Slot(str)
+    def stopContainer(self, container_id: str):
+        asyncio.ensure_future(self._container_action(container_id, "stop"))
+
+    async def _container_action(self, container_id: str, action: str):
+        self._set_container_action_busy(True)
+        try:
+            # Docker's default stop grace period (SIGTERM, then SIGKILL after 10s)
+            # can exceed the client's normal 5s timeout, so allow more time here.
+            response = await self._client.post(f"/containers/{container_id}/{action}", timeout=20.0)
+            response.raise_for_status()
+            await self._fetch_container_detail(container_id)
+            await self._fetch_containers()
+        except (httpx.HTTPError, OSError) as error:
+            self.containerActionErrorOccurred.emit(_error_message(error))
+        finally:
+            self._set_container_action_busy(False)
 
     @Slot()
     def fetchImages(self):
