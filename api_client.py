@@ -9,6 +9,7 @@ from PySide6.QtCore import (
     QModelIndex,
     QObject,
     QSettings,
+    QSortFilterProxyModel,
     Qt,
     Signal,
     Slot,
@@ -136,6 +137,36 @@ class ContainerListModel(QAbstractListModel):
         self.beginResetModel()
         self._containers = containers
         self.endResetModel()
+
+
+class ContainerFilterProxyModel(QSortFilterProxyModel):
+    filterTextChanged = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._filter_text = ""
+
+    @Property(str, notify=filterTextChanged)
+    def filterText(self):
+        return self._filter_text
+
+    @Slot(str)
+    def setFilterText(self, value: str):
+        value = value or ""
+        if value != self._filter_text:
+            self._filter_text = value
+            self.filterTextChanged.emit(value)
+            self.invalidateFilter()
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        if not self._filter_text:
+            return True
+        text = self._filter_text.lower()
+        model = self.sourceModel()
+        index = model.index(source_row, 0, source_parent)
+        names = (model.data(index, ContainerListModel.NamesRole) or "").lower()
+        image = (model.data(index, ContainerListModel.ImageRole) or "").lower()
+        return text in names or text in image
 
 
 COMPOSE_PROJECT_LABEL = "com.docker.compose.project"
@@ -317,6 +348,8 @@ class ApiClient(QObject):
         self._container_action_busy = False
         self._volume_action_busy = False
         self._containers_model = ContainerListModel(self)
+        self._containers_filter_model = ContainerFilterProxyModel(self)
+        self._containers_filter_model.setSourceModel(self._containers_model)
         self._images_model = ImageListModel(self)
         self._volumes_model = VolumeListModel(self)
         self._compose_projects = []
@@ -407,6 +440,10 @@ class ApiClient(QObject):
     @Property(QObject, constant=True)
     def containersModel(self):
         return self._containers_model
+
+    @Property(QObject, constant=True)
+    def filteredContainersModel(self):
+        return self._containers_filter_model
 
     @Property(QObject, constant=True)
     def imagesModel(self):

@@ -33,6 +33,38 @@ Item {
         expandedServices = updated
     }
 
+    property string searchText: ""
+
+    // Compose containers are grouped by project/service rather than being a flat
+    // list, so filtering them by name/image needs to happen here in QML instead of
+    // through the ContainerFilterProxyModel used for the "All Containers" list -
+    // matching containers are kept and any project/service left with none is
+    // dropped entirely so an empty group doesn't show up as a bare header.
+    property var filteredComposeProjects: {
+        const text = searchText.trim().toLowerCase()
+        if (!text) {
+            return apiClient.composeProjects
+        }
+
+        const matches = (container) =>
+            container.name.toLowerCase().includes(text) || container.image.toLowerCase().includes(text)
+
+        const projects = []
+        for (const project of apiClient.composeProjects) {
+            const services = []
+            for (const service of project.services) {
+                const containers = service.containers.filter(matches)
+                if (containers.length > 0) {
+                    services.push(Object.assign({}, service, { containers: containers }))
+                }
+            }
+            if (services.length > 0) {
+                projects.push(Object.assign({}, project, { services: services }))
+            }
+        }
+        return projects
+    }
+
     Connections {
         target: apiClient
         function onContainersErrorOccurred(message) {
@@ -190,6 +222,17 @@ Item {
             Layout.fillWidth: true
         }
 
+        TextField {
+            id: searchField
+            objectName: "containerSearchField"
+            Layout.fillWidth: true
+            placeholderText: qsTr("Search containers by name or image…")
+            onTextChanged: {
+                apiClient.filteredContainersModel.setFilterText(text)
+                containersPage.searchText = text
+            }
+        }
+
         TabBar {
             id: tabBar
             objectName: "containersTabBar"
@@ -204,65 +247,79 @@ Item {
             Layout.fillHeight: true
             currentIndex: tabBar.currentIndex
 
-            ListView {
-                id: containersList
-                objectName: "containersListView"
-                clip: true
+            ColumnLayout {
                 spacing: 4
-                model: apiClient.containersModel
 
-                delegate: Frame {
-                    id: containerRowDelegate
-                    required property string containerId
-                    required property string names
-                    required property string image
-                    required property string status
-                    required property string state
-                    width: containersList.width
+                Label {
+                    visible: containersList.count === 0 && !apiClient.containersBusy
+                    text: searchField.text.length > 0
+                        ? qsTr("No containers match \"%1\"").arg(searchField.text)
+                        : qsTr("No containers found")
+                    opacity: 0.7
+                }
 
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 8
+                ListView {
+                    id: containersList
+                    objectName: "containersListView"
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    spacing: 4
+                    model: apiClient.filteredContainersModel
 
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
+                    delegate: Frame {
+                        id: containerRowDelegate
+                        required property string containerId
+                        required property string names
+                        required property string image
+                        required property string status
+                        required property string state
+                        width: containersList.width
 
-                            Label {
-                                text: containerRowDelegate.names
-                                font.bold: true
+                        RowLayout {
+                            anchors.fill: parent
+                            spacing: 8
+
+                            ColumnLayout {
                                 Layout.fillWidth: true
-                                elide: Text.ElideRight
+                                spacing: 2
+
+                                Label {
+                                    text: containerRowDelegate.names
+                                    font.bold: true
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+
+                                Label {
+                                    text: qsTr("Image: %1").arg(containerRowDelegate.image)
+                                    font.pixelSize: 12
+                                    opacity: 0.7
+                                }
+
+                                Label {
+                                    text: qsTr("Status: %1").arg(containerRowDelegate.status)
+                                    font.pixelSize: 12
+                                    opacity: 0.7
+                                }
                             }
 
-                            Label {
-                                text: qsTr("Image: %1").arg(containerRowDelegate.image)
-                                font.pixelSize: 12
-                                opacity: 0.7
-                            }
-
-                            Label {
-                                text: qsTr("Status: %1").arg(containerRowDelegate.status)
-                                font.pixelSize: 12
-                                opacity: 0.7
+                            Button {
+                                objectName: "quickActionButton_" + containerRowDelegate.containerId
+                                text: apiClient.containerActionBusy
+                                    ? qsTr("Working...")
+                                    : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
+                                enabled: !apiClient.containerActionBusy
+                                onClicked: containerRowDelegate.state === "running"
+                                    ? apiClient.stopContainer(containerRowDelegate.containerId)
+                                    : apiClient.startContainer(containerRowDelegate.containerId)
                             }
                         }
 
-                        Button {
-                            objectName: "quickActionButton_" + containerRowDelegate.containerId
-                            text: apiClient.containerActionBusy
-                                ? qsTr("Working...")
-                                : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                            enabled: !apiClient.containerActionBusy
-                            onClicked: containerRowDelegate.state === "running"
-                                ? apiClient.stopContainer(containerRowDelegate.containerId)
-                                : apiClient.startContainer(containerRowDelegate.containerId)
+                        TapHandler {
+                            cursorShape: Qt.PointingHandCursor
+                            onTapped: containersPage.openContainerDetail(containerRowDelegate.containerId)
                         }
-                    }
-
-                    TapHandler {
-                        cursorShape: Qt.PointingHandCursor
-                        onTapped: containersPage.openContainerDetail(containerRowDelegate.containerId)
                     }
                 }
             }
@@ -276,13 +333,15 @@ Item {
                     spacing: 4
 
                     Label {
-                        visible: apiClient.composeProjects.length === 0 && !apiClient.containersBusy
-                        text: qsTr("No Compose projects found")
+                        visible: containersPage.filteredComposeProjects.length === 0 && !apiClient.containersBusy
+                        text: searchField.text.length > 0
+                            ? qsTr("No Compose containers match \"%1\"").arg(searchField.text)
+                            : qsTr("No Compose projects found")
                         opacity: 0.7
                     }
 
                     Repeater {
-                        model: apiClient.composeProjects
+                        model: containersPage.filteredComposeProjects
 
                         delegate: ColumnLayout {
                             id: projectDelegate
