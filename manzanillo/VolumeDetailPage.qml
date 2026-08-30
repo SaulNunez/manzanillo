@@ -44,89 +44,99 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
+        spacing: 0
 
-        RowLayout {
+        ToolBar {
             Layout.fillWidth: true
-            spacing: 8
 
-            Button {
-                objectName: "volumeDetailBackButton"
-                text: qsTr("< Back")
-                onClicked: volumeDetailPage.StackView.view.pop()
-            }
+            RowLayout {
+                anchors.fill: parent
+                spacing: 8
 
-            Label {
-                text: volumeDetailPage.volumeName
-                font.pixelSize: 20
-                Layout.fillWidth: true
-                elide: Text.ElideRight
-            }
-        }
+                ToolButton {
+                    objectName: "volumeDetailBackButton"
+                    text: qsTr("< Back")
+                    onClicked: volumeDetailPage.StackView.view.pop()
+                }
 
-        RowLayout {
-            spacing: 8
-
-            Button {
-                objectName: "volumeDetailDeleteButton"
-                text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
-                enabled: !apiClient.volumeActionBusy && !volumeDetailPage.inUse
-                onClicked: deleteVolumeDialog.open()
-            }
-
-            Label {
-                text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                font.italic: true
-                color: volumeDetailPage.inUse ? palette.text : "gray"
+                Label {
+                    text: volumeDetailPage.volumeName
+                    font.pixelSize: 20
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
             }
         }
 
-        Label {
-            visible: apiClient.volumeDetailBusy
-            text: qsTr("Loading...")
-        }
-
-        DetailErrorLabel {
-            id: detailErrorLabel
-        }
-
-        ScrollView {
-            id: detailScrollView
-            visible: !apiClient.volumeDetailBusy
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
+            Layout.margins: 12
+            spacing: 8
 
-            ColumnLayout {
-                width: detailScrollView.availableWidth
-                spacing: 4
+            RowLayout {
+                spacing: 8
 
-                Label { text: qsTr("Driver: %1").arg(apiClient.volumeDetail.driver) }
-                Label { text: qsTr("Scope: %1").arg(apiClient.volumeDetail.scope) }
-                Label { text: qsTr("Created: %1").arg(apiClient.volumeDetail.created) }
-                Label { text: qsTr("Mountpoint: %1").arg(apiClient.volumeDetail.mountpoint); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                Button {
+                    objectName: "volumeDetailDeleteButton"
+                    text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
+                    enabled: !apiClient.volumeActionBusy && !volumeDetailPage.inUse
+                    onClicked: deleteVolumeDialog.open()
+                }
 
-                Label { text: qsTr("Labels"); font.bold: true; Layout.topMargin: 8 }
                 Label {
-                    visible: !apiClient.volumeDetail.labels || apiClient.volumeDetail.labels.length === 0
-                    text: qsTr("(none)")
-                    opacity: 0.7
+                    text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
+                    font.italic: true
+                    color: volumeDetailPage.inUse ? palette.text : "gray"
                 }
-                Repeater {
-                    model: apiClient.volumeDetail.labels || []
-                    delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                }
+            }
 
-                Label { text: qsTr("Options"); font.bold: true; Layout.topMargin: 8 }
-                Label {
-                    visible: !apiClient.volumeDetail.options || apiClient.volumeDetail.options.length === 0
-                    text: qsTr("(none)")
-                    opacity: 0.7
-                }
-                Repeater {
-                    model: apiClient.volumeDetail.options || []
-                    delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+            Label {
+                visible: apiClient.volumeDetailBusy
+                text: qsTr("Loading...")
+            }
+
+            DetailErrorLabel {
+                id: detailErrorLabel
+            }
+
+            ScrollView {
+                id: detailScrollView
+                visible: !apiClient.volumeDetailBusy
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+
+                ColumnLayout {
+                    width: detailScrollView.availableWidth
+                    spacing: 4
+
+                    Label { text: qsTr("Driver: %1").arg(apiClient.volumeDetail.driver) }
+                    Label { text: qsTr("Scope: %1").arg(apiClient.volumeDetail.scope) }
+                    Label { text: qsTr("Created: %1").arg(apiClient.volumeDetail.created) }
+                    Label { text: qsTr("Mountpoint: %1").arg(apiClient.volumeDetail.mountpoint); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+
+                    Label { text: qsTr("Labels"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.volumeDetail.labels || apiClient.volumeDetail.labels.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.volumeDetail.labels || []
+                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    }
+
+                    Label { text: qsTr("Options"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.volumeDetail.options || apiClient.volumeDetail.options.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.volumeDetail.options || []
+                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    }
                 }
             }
         }

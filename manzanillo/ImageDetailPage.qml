@@ -85,142 +85,152 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
+        spacing: 0
 
-        RowLayout {
+        ToolBar {
             Layout.fillWidth: true
+
+            RowLayout {
+                anchors.fill: parent
+                spacing: 8
+
+                ToolButton {
+                    objectName: "imageDetailBackButton"
+                    text: qsTr("< Back")
+                    onClicked: imageDetailPage.StackView.view.pop()
+                }
+
+                Label {
+                    text: imageDetailPage.tags
+                    font.pixelSize: 20
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.margins: 12
             spacing: 8
 
-            Button {
-                objectName: "imageDetailBackButton"
-                text: qsTr("< Back")
-                onClicked: imageDetailPage.StackView.view.pop()
+            RowLayout {
+                spacing: 8
+
+                Button {
+                    objectName: "imageDetailTagButton"
+                    text: qsTr("Tag")
+                    enabled: !apiClient.imageActionBusy
+                    onClicked: {
+                        tagRepositoryField.text = ""
+                        tagTagField.text = ""
+                        tagImageDialog.open()
+                    }
+                }
+
+                Button {
+                    objectName: "imageDetailDeleteButton"
+                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
+                    enabled: !apiClient.imageActionBusy
+                    onClicked: deleteImageDialog.open()
+                }
             }
 
             Label {
-                text: imageDetailPage.tags
-                font.pixelSize: 20
+                visible: apiClient.imageDetailBusy
+                text: qsTr("Loading...")
+            }
+
+            DetailErrorLabel {
+                id: detailErrorLabel
+            }
+
+            ScrollView {
+                id: detailScrollView
+                visible: !apiClient.imageDetailBusy
                 Layout.fillWidth: true
-                elide: Text.ElideRight
-            }
-        }
+                Layout.fillHeight: true
+                clip: true
 
-        RowLayout {
-            spacing: 8
+                ColumnLayout {
+                    width: detailScrollView.availableWidth
+                    spacing: 4
 
-            Button {
-                objectName: "imageDetailTagButton"
-                text: qsTr("Tag")
-                enabled: !apiClient.imageActionBusy
-                onClicked: {
-                    tagRepositoryField.text = ""
-                    tagTagField.text = ""
-                    tagImageDialog.open()
-                }
-            }
+                    Label { text: qsTr("Id: %1").arg(apiClient.imageDetail.id); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    Label { text: qsTr("Created: %1").arg(apiClient.imageDetail.created) }
+                    Label { text: qsTr("Size: %1").arg(apiClient.imageDetail.size) }
+                    Label { text: qsTr("Architecture: %1    OS: %2").arg(apiClient.imageDetail.architecture).arg(apiClient.imageDetail.os) }
+                    Label { text: qsTr("Author: %1").arg(apiClient.imageDetail.author); visible: !!apiClient.imageDetail.author }
+                    Label { text: qsTr("Command: %1").arg(apiClient.imageDetail.command); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.imageDetail.command }
+                    Label { text: qsTr("Working Dir: %1").arg(apiClient.imageDetail.workingDir); visible: !!apiClient.imageDetail.workingDir }
 
-            Button {
-                objectName: "imageDetailDeleteButton"
-                text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                enabled: !apiClient.imageActionBusy
-                onClicked: deleteImageDialog.open()
-            }
-        }
+                    Label { text: qsTr("Tags"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.imageDetail.tags || apiClient.imageDetail.tags.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.imageDetail.tags || []
+                        delegate: Label { required property string modelData; text: modelData }
+                    }
 
-        Label {
-            visible: apiClient.imageDetailBusy
-            text: qsTr("Loading...")
-        }
+                    Label { text: qsTr("Digests"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.imageDetail.digests || apiClient.imageDetail.digests.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.imageDetail.digests || []
+                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    }
 
-        DetailErrorLabel {
-            id: detailErrorLabel
-        }
+                    Label { text: qsTr("Exposed Ports"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.imageDetail.exposedPorts || apiClient.imageDetail.exposedPorts.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.imageDetail.exposedPorts || []
+                        delegate: Label { required property string modelData; text: modelData }
+                    }
 
-        ScrollView {
-            id: detailScrollView
-            visible: !apiClient.imageDetailBusy
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
+                    Label { text: qsTr("Environment"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.imageDetail.env || apiClient.imageDetail.env.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.imageDetail.env || []
+                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    }
 
-            ColumnLayout {
-                width: detailScrollView.availableWidth
-                spacing: 4
+                    Label { text: qsTr("Labels"); font.bold: true; Layout.topMargin: 8 }
+                    Label {
+                        visible: !apiClient.imageDetail.labels || apiClient.imageDetail.labels.length === 0
+                        text: qsTr("(none)")
+                        opacity: 0.7
+                    }
+                    Repeater {
+                        model: apiClient.imageDetail.labels || []
+                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    }
 
-                Label { text: qsTr("Id: %1").arg(apiClient.imageDetail.id); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                Label { text: qsTr("Created: %1").arg(apiClient.imageDetail.created) }
-                Label { text: qsTr("Size: %1").arg(apiClient.imageDetail.size) }
-                Label { text: qsTr("Architecture: %1    OS: %2").arg(apiClient.imageDetail.architecture).arg(apiClient.imageDetail.os) }
-                Label { text: qsTr("Author: %1").arg(apiClient.imageDetail.author); visible: !!apiClient.imageDetail.author }
-                Label { text: qsTr("Command: %1").arg(apiClient.imageDetail.command); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.imageDetail.command }
-                Label { text: qsTr("Working Dir: %1").arg(apiClient.imageDetail.workingDir); visible: !!apiClient.imageDetail.workingDir }
-
-                Label { text: qsTr("Tags"); font.bold: true; Layout.topMargin: 8 }
-                Label {
-                    visible: !apiClient.imageDetail.tags || apiClient.imageDetail.tags.length === 0
-                    text: qsTr("(none)")
-                    opacity: 0.7
-                }
-                Repeater {
-                    model: apiClient.imageDetail.tags || []
-                    delegate: Label { required property string modelData; text: modelData }
-                }
-
-                Label { text: qsTr("Digests"); font.bold: true; Layout.topMargin: 8 }
-                Label {
-                    visible: !apiClient.imageDetail.digests || apiClient.imageDetail.digests.length === 0
-                    text: qsTr("(none)")
-                    opacity: 0.7
-                }
-                Repeater {
-                    model: apiClient.imageDetail.digests || []
-                    delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                }
-
-                Label { text: qsTr("Exposed Ports"); font.bold: true; Layout.topMargin: 8 }
-                Label {
-                    visible: !apiClient.imageDetail.exposedPorts || apiClient.imageDetail.exposedPorts.length === 0
-                    text: qsTr("(none)")
-                    opacity: 0.7
-                }
-                Repeater {
-                    model: apiClient.imageDetail.exposedPorts || []
-                    delegate: Label { required property string modelData; text: modelData }
-                }
-
-                Label { text: qsTr("Environment"); font.bold: true; Layout.topMargin: 8 }
-                Label {
-                    visible: !apiClient.imageDetail.env || apiClient.imageDetail.env.length === 0
-                    text: qsTr("(none)")
-                    opacity: 0.7
-                }
-                Repeater {
-                    model: apiClient.imageDetail.env || []
-                    delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                }
-
-                Label { text: qsTr("Labels"); font.bold: true; Layout.topMargin: 8 }
-                Label {
-                    visible: !apiClient.imageDetail.labels || apiClient.imageDetail.labels.length === 0
-                    text: qsTr("(none)")
-                    opacity: 0.7
-                }
-                Repeater {
-                    model: apiClient.imageDetail.labels || []
-                    delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                }
-
-                Label { text: qsTr("Layers"); font.bold: true; Layout.topMargin: 8 }
-                Repeater {
-                    model: apiClient.imageDetail.layers || []
-                    delegate: Label {
-                        required property string modelData
-                        text: modelData
-                        wrapMode: Text.WrapAnywhere
-                        Layout.fillWidth: true
-                        font.family: "monospace"
-                        font.pixelSize: 11
+                    Label { text: qsTr("Layers"); font.bold: true; Layout.topMargin: 8 }
+                    Repeater {
+                        model: apiClient.imageDetail.layers || []
+                        delegate: Label {
+                            required property string modelData
+                            text: modelData
+                            wrapMode: Text.WrapAnywhere
+                            Layout.fillWidth: true
+                            font.family: "monospace"
+                            font.pixelSize: 11
+                        }
                     }
                 }
             }
