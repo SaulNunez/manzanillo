@@ -225,6 +225,7 @@ Item {
         id: imageStack
         objectName: "imageStack"
         anchors.fill: parent
+        clip: true
         initialItem: imageListComponent
     }
 

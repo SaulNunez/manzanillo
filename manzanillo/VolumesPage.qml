@@ -40,6 +40,7 @@ Item {
         id: volumeStack
         objectName: "volumeStack"
         anchors.fill: parent
+        clip: true
         initialItem: volumeListComponent
     }
 

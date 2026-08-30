@@ -67,6 +67,7 @@ Item {
         id: containerStack
         objectName: "containerStack"
         anchors.fill: parent
+        clip: true
         initialItem: containerListComponent
     }
 
