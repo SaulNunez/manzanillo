@@ -12,12 +12,10 @@ Item {
     Connections {
         target: apiClient
         function onVolumeDetailErrorOccurred(message) {
-            detailErrorLabel.text = message
-            detailErrorLabel.visible = true
+            detailErrorLabel.show(message)
         }
         function onVolumeActionErrorOccurred(message) {
-            detailErrorLabel.text = message
-            detailErrorLabel.visible = true
+            detailErrorLabel.show(message)
         }
     }
 
@@ -89,12 +87,8 @@ Item {
             text: qsTr("Loading...")
         }
 
-        Label {
+        DetailErrorLabel {
             id: detailErrorLabel
-            visible: false
-            color: "red"
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
         }
 
         ScrollView {

@@ -14,16 +14,13 @@ Item {
     Connections {
         target: apiClient
         function onContainerDetailErrorOccurred(message) {
-            detailErrorLabel.text = message
-            detailErrorLabel.visible = true
+            detailErrorLabel.show(message)
         }
         function onContainerActionErrorOccurred(message) {
-            detailErrorLabel.text = message
-            detailErrorLabel.visible = true
+            detailErrorLabel.show(message)
         }
         function onContainerLogsErrorOccurred(message) {
-            detailErrorLabel.text = message
-            detailErrorLabel.visible = true
+            detailErrorLabel.show(message)
         }
     }
 
@@ -55,12 +52,8 @@ Item {
             text: qsTr("Loading...")
         }
 
-        Label {
+        DetailErrorLabel {
             id: detailErrorLabel
-            visible: false
-            color: "red"
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
         }
 
         TabBar {
