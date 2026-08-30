@@ -137,6 +137,7 @@ Item {
 
                         delegate: Frame {
                             id: volumeRowDelegate
+                            required property int index
                             required property string name
                             required property string driver
                             required property string mountpoint
@@ -206,7 +207,7 @@ Item {
                             TapHandler {
                                 cursorShape: Qt.PointingHandCursor
                                 onTapped: {
-                                    volumesList.currentIndex = index
+                                    volumesList.currentIndex = volumeRowDelegate.index
                                     volumesPage.openVolumeDetail(volumeRowDelegate.name, volumeRowDelegate.inUse)
                                 }
                             }

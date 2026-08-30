@@ -200,6 +200,7 @@ Item {
 
                                 delegate: Frame {
                                     id: containerRowDelegate
+                                    required property int index
                                     required property string containerId
                                     required property string names
                                     required property string image
@@ -264,7 +265,7 @@ Item {
                                     TapHandler {
                                         cursorShape: Qt.PointingHandCursor
                                         onTapped: {
-                                            containersList.currentIndex = index
+                                            containersList.currentIndex = containerRowDelegate.index
                                             containersPage.openContainerDetail(containerRowDelegate.containerId)
                                         }
                                     }
