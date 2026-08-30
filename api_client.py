@@ -343,6 +343,7 @@ class ApiClient(QObject):
 
     imageActionBusyChanged = Signal()
     imageActionErrorOccurred = Signal(str)
+    buildLogChanged = Signal()
 
     volumesErrorOccurred = Signal(str)
     volumesBusyChanged = Signal()
@@ -368,6 +369,7 @@ class ApiClient(QObject):
         self._container_action_busy = False
         self._volume_action_busy = False
         self._image_action_busy = False
+        self._build_log = ""
         self._containers_model = ContainerListModel(self)
         self._containers_filter_model = ContainerFilterProxyModel(self)
         self._containers_filter_model.setSourceModel(self._containers_model)
@@ -580,6 +582,16 @@ class ApiClient(QObject):
             self._image_action_busy = value
             self.imageActionBusyChanged.emit()
 
+    @Property(str, notify=buildLogChanged)
+    def buildLog(self):
+        return self._build_log
+
+    def _append_build_log(self, text: str):
+        if not text:
+            return
+        self._build_log += text if text.endswith("\n") else text + "\n"
+        self.buildLogChanged.emit()
+
     @Slot(str)
     def deleteImage(self, image_id: str):
         asyncio.ensure_future(self._delete_image(image_id))
@@ -651,6 +663,8 @@ class ApiClient(QObject):
 
     async def _build_image(self, context_path: str, dockerfile: str, tag: str):
         self._set_image_action_busy(True)
+        self._build_log = ""
+        self.buildLogChanged.emit()
         try:
             context_path = context_path.strip()
             dockerfile = dockerfile.strip() or "Dockerfile"
@@ -687,13 +701,16 @@ class ApiClient(QObject):
                         payload = json.loads(line)
                     except ValueError:
                         continue
+                    self._append_build_log(payload.get("stream") or payload.get("status") or "")
                     if "error" in payload:
                         build_error = payload["error"]
                 if build_error:
                     raise RuntimeError(build_error)
             await self._fetch_images()
         except (httpx.HTTPError, OSError, RuntimeError) as error:
-            self.imageActionErrorOccurred.emit(_error_message(error))
+            message = _error_message(error)
+            self._append_build_log(f"Error: {message}")
+            self.imageActionErrorOccurred.emit(message)
         finally:
             self._set_image_action_busy(False)
 

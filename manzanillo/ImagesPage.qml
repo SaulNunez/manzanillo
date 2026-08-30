@@ -101,14 +101,11 @@ Item {
 
         modal: true
         title: qsTr("Build image")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        width: 420
+        // Only a Close button - building doesn't close the dialog, since the log
+        // view needs to stay visible while the build streams in.
+        standardButtons: Dialog.Close
+        width: 480
         anchors.centerIn: Overlay.overlay
-
-        onAccepted: apiClient.buildImage(
-            buildContextField.text.trim(),
-            buildDockerfileField.text.trim(),
-            buildTagField.text.trim())
 
         contentItem: ColumnLayout {
             width: buildImageDialog.availableWidth
@@ -149,6 +146,41 @@ Item {
                 objectName: "buildTagField"
                 Layout.fillWidth: true
                 placeholderText: qsTr("e.g. myimage:latest")
+            }
+
+            Button {
+                objectName: "startBuildButton"
+                text: apiClient.imageActionBusy ? qsTr("Building...") : qsTr("Build")
+                enabled: !apiClient.imageActionBusy && buildContextField.text.trim().length > 0
+                onClicked: apiClient.buildImage(
+                    buildContextField.text.trim(),
+                    buildDockerfileField.text.trim(),
+                    buildTagField.text.trim())
+            }
+
+            Label {
+                text: qsTr("Build Log")
+                font.bold: true
+                Layout.topMargin: 4
+                visible: buildLogArea.text.length > 0
+            }
+
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 220
+                clip: true
+                visible: buildLogArea.text.length > 0
+
+                TextArea {
+                    id: buildLogArea
+                    objectName: "buildLogArea"
+                    readOnly: true
+                    wrapMode: TextArea.NoWrap
+                    text: apiClient.buildLog
+                    font.family: "monospace"
+                    font.pixelSize: 11
+                    onTextChanged: cursorPosition = length
+                }
             }
         }
     }
