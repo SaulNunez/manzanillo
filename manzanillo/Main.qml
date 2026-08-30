@@ -20,6 +20,14 @@ Window {
     readonly property int narrowBreakpoint: 600
     readonly property bool narrow: width < narrowBreakpoint
 
+    // Exposed so each page's own ToolBar can host the nav-toggle button itself
+    // instead of a separate bar - pages are separate files and can't see
+    // navDrawer's id directly, but Window.window.<property> works from anywhere.
+    property alias drawerOpen: navDrawer.visible
+    function toggleDrawer() {
+        navDrawer.visible ? navDrawer.close() : navDrawer.open()
+    }
+
     onNarrowChanged: {
         if (narrow) {
             navDrawer.close()
@@ -66,47 +74,15 @@ Window {
         }
     }
 
-    ColumnLayout {
+    StackLayout {
         anchors.fill: parent
         anchors.leftMargin: narrow ? 0 : (rtl ? 0 : navDrawer.width)
         anchors.rightMargin: narrow ? 0 : (rtl ? navDrawer.width : 0)
-        spacing: 0
+        currentIndex: nav.currentIndex
 
-        ToolBar {
-            Layout.fillWidth: true
-            visible: narrow
-
-            RowLayout {
-                anchors.fill: parent
-                spacing: 8
-
-                ToolButton {
-                    objectName: "navMenuButton"
-                    text: "☰"
-                    Accessible.name: navDrawer.visible ? qsTr("Close navigation") : qsTr("Open navigation")
-                    ToolTip.visible: hovered
-                    ToolTip.text: Accessible.name
-                    onClicked: navDrawer.visible ? navDrawer.close() : navDrawer.open()
-                }
-
-                Label {
-                    text: nav.currentIndex >= 0 ? nav.model[nav.currentIndex] : ""
-                    font.pixelSize: TypeScale.title
-                    Layout.fillWidth: true
-                    elide: Text.ElideRight
-                }
-            }
-        }
-
-        StackLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            currentIndex: nav.currentIndex
-
-            ContainersPage {}
-            ImagesPage {}
-            VolumesPage {}
-            SettingsPage {}
-        }
+        ContainersPage {}
+        ImagesPage {}
+        VolumesPage {}
+        SettingsPage {}
     }
 }

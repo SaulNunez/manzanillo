@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -235,158 +236,179 @@ Item {
         Item {
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 8
+                spacing: 0
 
-                RowLayout {
+                ToolBar {
                     Layout.fillWidth: true
 
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 8
+
+                        ToolButton {
+                            text: "☰"
+                            visible: Window.window ? Window.window.narrow : false
+                            Accessible.name: (Window.window && Window.window.drawerOpen)
+                                ? qsTr("Close navigation") : qsTr("Open navigation")
+                            ToolTip.visible: hovered
+                            ToolTip.text: Accessible.name
+                            onClicked: Window.window.toggleDrawer()
+                        }
+
+                        Label {
+                            text: qsTr("Images")
+                            font.pixelSize: TypeScale.title
+                            Layout.fillWidth: true
+                        }
+
+                        Button {
+                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
+                            enabled: !apiClient.imageActionBusy
+                            onClicked: imagesPage.openPullImageDialog()
+                        }
+
+                        Button {
+                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
+                            enabled: !apiClient.imageActionBusy
+                            onClicked: imagesPage.openBuildImageDialog()
+                        }
+
+                        Button {
+                            text: apiClient.imagesBusy ? qsTr("Loading...") : qsTr("Refresh")
+                            enabled: !apiClient.imagesBusy
+                            onClicked: apiClient.fetchImages()
+                        }
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.margins: 12
+                    spacing: 8
+
                     Label {
-                        text: qsTr("Images")
-                        font.pixelSize: TypeScale.title
+                        id: errorLabel
+                        visible: false
+                        color: Colors.error
+                        wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
 
-                    Button {
-                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
-                        enabled: !apiClient.imageActionBusy
-                        onClicked: imagesPage.openPullImageDialog()
-                    }
-
-                    Button {
-                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
-                        enabled: !apiClient.imageActionBusy
-                        onClicked: imagesPage.openBuildImageDialog()
-                    }
-
-                    Button {
-                        text: apiClient.imagesBusy ? qsTr("Loading...") : qsTr("Refresh")
-                        enabled: !apiClient.imagesBusy
-                        onClicked: apiClient.fetchImages()
-                    }
-                }
-
-                Label {
-                    id: errorLabel
-                    visible: false
-                    color: Colors.error
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-
-                Connections {
-                    target: apiClient
-                    function onImagesErrorOccurred(message) {
-                        errorLabel.text = message
-                        errorLabel.visible = true
-                    }
-                    function onImageActionErrorOccurred(message) {
-                        errorLabel.text = message
-                        errorLabel.visible = true
-                    }
-                }
-
-                Label {
-                    visible: imagesList.count === 0 && !apiClient.imagesBusy
-                    text: qsTr("No images found")
-                    opacity: 0.7
-                }
-
-                ListView {
-                    id: imagesList
-                    objectName: "imagesListView"
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    spacing: 4
-                    model: apiClient.imagesModel
-                    activeFocusOnTab: true
-
-                    // Keyboard equivalent of tapping a row: arrow keys move currentIndex
-                    // (built into ListView), Enter/Return/Space opens its detail page.
-                    Keys.onPressed: (event) => {
-                        if (currentItem && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
-                            imagesPage.openImageDetail(currentItem.imageId, currentItem.tags)
-                            event.accepted = true
+                    Connections {
+                        target: apiClient
+                        function onImagesErrorOccurred(message) {
+                            errorLabel.text = message
+                            errorLabel.visible = true
+                        }
+                        function onImageActionErrorOccurred(message) {
+                            errorLabel.text = message
+                            errorLabel.visible = true
                         }
                     }
 
-                    delegate: Frame {
-                        id: imageRowDelegate
-                        required property string imageId
-                        required property string tags
-                        required property string size
-                        required property string created
-                        required property bool inUse
-                        width: imagesList.width
-                        // Frame only derives its implicit size automatically from a single
-                        // content child; the focus-ring Rectangle below makes that two, so
-                        // size it explicitly off the RowLayout instead.
-                        implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
+                    Label {
+                        visible: imagesList.count === 0 && !apiClient.imagesBusy
+                        text: qsTr("No images found")
+                        opacity: 0.7
+                    }
 
-                        RowLayout {
-                            id: contentRow
-                            anchors.fill: parent
-                            spacing: 8
+                    ListView {
+                        id: imagesList
+                        objectName: "imagesListView"
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        spacing: 4
+                        model: apiClient.imagesModel
+                        activeFocusOnTab: true
 
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
+                        // Keyboard equivalent of tapping a row: arrow keys move currentIndex
+                        // (built into ListView), Enter/Return/Space opens its detail page.
+                        Keys.onPressed: (event) => {
+                            if (currentItem && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
+                                imagesPage.openImageDetail(currentItem.imageId, currentItem.tags)
+                                event.accepted = true
+                            }
+                        }
 
-                                Label {
-                                    text: imageRowDelegate.tags
-                                    font.bold: true
-                                    font.pixelSize: TypeScale.body
+                        delegate: Frame {
+                            id: imageRowDelegate
+                            required property string imageId
+                            required property string tags
+                            required property string size
+                            required property string created
+                            required property bool inUse
+                            width: imagesList.width
+                            // Frame only derives its implicit size automatically from a single
+                            // content child; the focus-ring Rectangle below makes that two, so
+                            // size it explicitly off the RowLayout instead.
+                            implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
+
+                            RowLayout {
+                                id: contentRow
+                                anchors.fill: parent
+                                spacing: 8
+
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    elide: Text.ElideRight
+                                    spacing: 2
+
+                                    Label {
+                                        text: imageRowDelegate.tags
+                                        font.bold: true
+                                        font.pixelSize: TypeScale.body
+                                        Layout.fillWidth: true
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Label {
+                                        text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
+                                        font.pixelSize: TypeScale.caption
+                                        opacity: 0.7
+                                    }
+
+                                    Label {
+                                        text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                                        font.pixelSize: TypeScale.caption
+                                        font.italic: true
+                                        color: imageRowDelegate.inUse ? palette.text : Colors.disabled
+                                    }
                                 }
 
-                                Label {
-                                    text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
-                                    font.pixelSize: TypeScale.caption
-                                    opacity: 0.7
-                                }
+                                ColumnLayout {
+                                    spacing: 4
 
-                                Label {
-                                    text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                    font.pixelSize: TypeScale.caption
-                                    font.italic: true
-                                    color: imageRowDelegate.inUse ? palette.text : Colors.disabled
+                                    Button {
+                                        objectName: "tagImageButton_" + imageRowDelegate.imageId
+                                        text: qsTr("Tag")
+                                        enabled: !apiClient.imageActionBusy
+                                        onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
+                                    }
+
+                                    Button {
+                                        objectName: "deleteImageButton_" + imageRowDelegate.imageId
+                                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
+                                        enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
+                                        onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
+                                    }
                                 }
                             }
 
-                            ColumnLayout {
-                                spacing: 4
-
-                                Button {
-                                    objectName: "tagImageButton_" + imageRowDelegate.imageId
-                                    text: qsTr("Tag")
-                                    enabled: !apiClient.imageActionBusy
-                                    onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
-                                }
-
-                                Button {
-                                    objectName: "deleteImageButton_" + imageRowDelegate.imageId
-                                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                    enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
-                                    onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
-                                }
+                            Rectangle {
+                                anchors.fill: parent
+                                color: "transparent"
+                                border.color: palette.highlight
+                                border.width: 2
+                                visible: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
                             }
-                        }
 
-                        Rectangle {
-                            anchors.fill: parent
-                            color: "transparent"
-                            border.color: palette.highlight
-                            border.width: 2
-                            visible: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
-                        }
-
-                        TapHandler {
-                            cursorShape: Qt.PointingHandCursor
-                            onTapped: {
-                                imagesList.currentIndex = index
-                                imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags)
+                            TapHandler {
+                                cursorShape: Qt.PointingHandCursor
+                                onTapped: {
+                                    imagesList.currentIndex = index
+                                    imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags)
+                                }
                             }
                         }
                     }
