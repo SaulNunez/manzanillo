@@ -9,15 +9,20 @@ Window {
     visible: true
     title: qsTr("Manzanillo")
 
-    RowLayout {
-        anchors.fill: parent
-        spacing: 0
+    Drawer {
+        id: navDrawer
+        objectName: "navDrawer"
+        width: 180
+        height: parent.height
+        edge: Qt.LeftEdge
+        modal: false
+        interactive: false
+        visible: true
 
         ListView {
             id: nav
             objectName: "navList"
-            Layout.preferredWidth: 180
-            Layout.fillHeight: true
+            anchors.fill: parent
             model: [qsTr("Containers"), qsTr("Images"), qsTr("Volumes"), qsTr("Settings")]
             currentIndex: 0
             delegate: ItemDelegate {
@@ -28,16 +33,16 @@ Window {
                 onClicked: nav.currentIndex = index
             }
         }
+    }
 
-        StackLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            currentIndex: nav.currentIndex
+    StackLayout {
+        anchors.fill: parent
+        anchors.leftMargin: navDrawer.width
+        currentIndex: nav.currentIndex
 
-            ContainersPage {}
-            ImagesPage {}
-            VolumesPage {}
-            SettingsPage {}
-        }
+        ContainersPage {}
+        ImagesPage {}
+        VolumesPage {}
+        SettingsPage {}
     }
 }
