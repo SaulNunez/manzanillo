@@ -11,5 +11,6 @@ SettingsPage 1.0 SettingsPage.qml
 DetailErrorLabel 1.0 DetailErrorLabel.qml
 StatusBadge 1.0 StatusBadge.qml
 SectionHeading 1.0 SectionHeading.qml
+FlatToolBar 1.0 FlatToolBar.qml
 singleton Colors 1.0 Colors.qml
 singleton TypeScale 1.0 TypeScale.qml

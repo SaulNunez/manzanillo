@@ -238,7 +238,7 @@ Item {
                 anchors.fill: parent
                 spacing: 0
 
-                ToolBar {
+                FlatToolBar {
                     Layout.fillWidth: true
 
                     RowLayout {
