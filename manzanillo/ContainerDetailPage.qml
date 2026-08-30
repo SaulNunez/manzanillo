@@ -68,6 +68,7 @@ Item {
 
                 Label {
                     text: qsTr("Loading...")
+                    font.pixelSize: TypeScale.body
                 }
             }
 
@@ -108,9 +109,18 @@ Item {
                         width: detailScrollView.availableWidth
                         spacing: 4
 
-                        Label { text: qsTr("Id: %1").arg(apiClient.containerDetail.id); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                        Label { text: qsTr("Image: %1").arg(apiClient.containerDetail.image); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                        Label { text: qsTr("State: %1").arg(apiClient.containerDetail.state) }
+                        Label { text: qsTr("Id: %1").arg(apiClient.containerDetail.id); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        Label { text: qsTr("Image: %1").arg(apiClient.containerDetail.image); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+
+                        RowLayout {
+                            spacing: 8
+
+                            Label { text: qsTr("State:"); font.pixelSize: TypeScale.body }
+                            StatusBadge {
+                                text: apiClient.containerDetail.state || ""
+                                tint: apiClient.containerDetail.state === "running" ? Colors.success : Colors.disabled
+                            }
+                        }
 
                         RowLayout {
                             spacing: 8
@@ -133,49 +143,58 @@ Item {
                             }
                         }
 
-                        Label { text: qsTr("Started: %1").arg(apiClient.containerDetail.startedAt); visible: !!apiClient.containerDetail.startedAt }
-                        Label { text: qsTr("Created: %1").arg(apiClient.containerDetail.created) }
-                        Label { text: qsTr("Command: %1").arg(apiClient.containerDetail.command); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.containerDetail.command }
-                        Label { text: qsTr("Working Dir: %1").arg(apiClient.containerDetail.workingDir); visible: !!apiClient.containerDetail.workingDir }
-                        Label { text: qsTr("Restart Policy: %1").arg(apiClient.containerDetail.restartPolicy); visible: !!apiClient.containerDetail.restartPolicy }
+                        Label { text: qsTr("Started: %1").arg(apiClient.containerDetail.startedAt); font.pixelSize: TypeScale.body; visible: !!apiClient.containerDetail.startedAt }
+                        Label { text: qsTr("Created: %1").arg(apiClient.containerDetail.created); font.pixelSize: TypeScale.body }
+                        Label { text: qsTr("Command: %1").arg(apiClient.containerDetail.command); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.containerDetail.command }
+                        Label { text: qsTr("Working Dir: %1").arg(apiClient.containerDetail.workingDir); font.pixelSize: TypeScale.body; visible: !!apiClient.containerDetail.workingDir }
+                        Label { text: qsTr("Restart Policy: %1").arg(apiClient.containerDetail.restartPolicy); font.pixelSize: TypeScale.body; visible: !!apiClient.containerDetail.restartPolicy }
 
-                        Label { text: qsTr("Ports"); font.bold: true; Layout.topMargin: 8 }
+                        SectionHeading { text: qsTr("Ports") }
                         Label {
                             visible: !apiClient.containerDetail.ports || apiClient.containerDetail.ports.length === 0
                             text: qsTr("(none)")
+                            font.pixelSize: TypeScale.body
                             opacity: 0.7
                         }
                         Repeater {
                             model: apiClient.containerDetail.ports || []
-                            delegate: Label { required property string modelData; text: modelData }
+                            delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body }
                         }
 
-                        Label { text: qsTr("Networks"); font.bold: true; Layout.topMargin: 8 }
+                        SectionHeading { text: qsTr("Networks") }
+                        Label {
+                            visible: !apiClient.containerDetail.networks || apiClient.containerDetail.networks.length === 0
+                            text: qsTr("(none)")
+                            font.pixelSize: TypeScale.body
+                            opacity: 0.7
+                        }
                         Repeater {
                             model: apiClient.containerDetail.networks || []
-                            delegate: Label { required property string modelData; text: modelData }
+                            delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body }
                         }
 
-                        Label { text: qsTr("Mounts"); font.bold: true; Layout.topMargin: 8 }
+                        SectionHeading { text: qsTr("Mounts") }
                         Label {
                             visible: !apiClient.containerDetail.mounts || apiClient.containerDetail.mounts.length === 0
                             text: qsTr("(none)")
+                            font.pixelSize: TypeScale.body
                             opacity: 0.7
                         }
                         Repeater {
                             model: apiClient.containerDetail.mounts || []
-                            delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                            delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                         }
 
-                        Label { text: qsTr("Environment"); font.bold: true; Layout.topMargin: 8 }
+                        SectionHeading { text: qsTr("Environment") }
                         Label {
                             visible: !apiClient.containerDetail.env || apiClient.containerDetail.env.length === 0
                             text: qsTr("(none)")
+                            font.pixelSize: TypeScale.body
                             opacity: 0.7
                         }
                         Repeater {
                             model: apiClient.containerDetail.env || []
-                            delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                            delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                         }
                     }
                 }
@@ -185,6 +204,7 @@ Item {
 
                     Label {
                         text: apiClient.containerLogsStreaming ? qsTr("Following logs…") : qsTr("Not following")
+                        font.pixelSize: TypeScale.caption
                         opacity: 0.7
                     }
 

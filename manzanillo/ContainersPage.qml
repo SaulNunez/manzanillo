@@ -103,7 +103,8 @@ Item {
                             Layout.fillWidth: true
                         }
 
-                        Button {
+                        ToolButton {
+                            icon.name: "view-refresh"
                             text: apiClient.containersBusy ? qsTr("Loading...") : qsTr("Refresh")
                             enabled: !apiClient.containersBusy
                             onClicked: apiClient.fetchContainers()
@@ -168,22 +169,21 @@ Item {
                         Layout.fillHeight: true
                         currentIndex: tabBar.currentIndex
 
-                        ColumnLayout {
-                            spacing: 4
-
+                        Item {
                             Label {
+                                anchors.centerIn: parent
                                 visible: containersList.count === 0 && !apiClient.containersBusy
                                 text: searchField.text.length > 0
                                     ? qsTr("No containers match \"%1\"").arg(searchField.text)
                                     : qsTr("No containers found")
+                                font.pixelSize: TypeScale.body
                                 opacity: 0.7
                             }
 
                             ListView {
                                 id: containersList
+                                anchors.fill: parent
                                 objectName: "containersListView"
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
                                 clip: true
                                 spacing: 4
                                 model: apiClient.filteredContainersModel
@@ -221,12 +221,22 @@ Item {
                                             Layout.fillWidth: true
                                             spacing: 2
 
-                                            Label {
-                                                text: containerRowDelegate.names
-                                                font.bold: true
-                                                font.pixelSize: TypeScale.body
+                                            RowLayout {
                                                 Layout.fillWidth: true
-                                                elide: Text.ElideRight
+                                                spacing: 8
+
+                                                Label {
+                                                    text: containerRowDelegate.names
+                                                    font.bold: true
+                                                    font.pixelSize: TypeScale.body
+                                                    Layout.fillWidth: true
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                StatusBadge {
+                                                    text: containerRowDelegate.state
+                                                    tint: containerRowDelegate.state === "running" ? Colors.success : Colors.disabled
+                                                }
                                             }
 
                                             Label {
@@ -286,6 +296,7 @@ Item {
                                     text: searchField.text.length > 0
                                         ? qsTr("No Compose containers match \"%1\"").arg(searchField.text)
                                         : qsTr("No Compose projects found")
+                                    font.pixelSize: TypeScale.body
                                     opacity: 0.7
                                 }
 
@@ -396,10 +407,22 @@ Item {
                                                                         Layout.fillWidth: true
                                                                         spacing: 2
 
-                                                                        Label {
-                                                                            text: containerDelegate.modelData.name
-                                                                            font.bold: true
-                                                                            font.pixelSize: TypeScale.body
+                                                                        RowLayout {
+                                                                            Layout.fillWidth: true
+                                                                            spacing: 8
+
+                                                                            Label {
+                                                                                text: containerDelegate.modelData.name
+                                                                                font.bold: true
+                                                                                font.pixelSize: TypeScale.body
+                                                                                Layout.fillWidth: true
+                                                                                elide: Text.ElideRight
+                                                                            }
+
+                                                                            StatusBadge {
+                                                                                text: containerDelegate.modelData.state
+                                                                                tint: containerDelegate.modelData.state === "running" ? Colors.success : Colors.disabled
+                                                                            }
                                                                         }
 
                                                                         Label {

@@ -6,6 +6,7 @@ Item {
     id: imageDetailPage
     required property string imageId
     required property string tags
+    required property bool inUse
 
     Component.onCompleted: apiClient.fetchImageDetail(imageDetailPage.imageId)
 
@@ -149,6 +150,7 @@ Item {
 
                 Label {
                     text: qsTr("Loading...")
+                    font.pixelSize: TypeScale.body
                 }
             }
 
@@ -167,70 +169,92 @@ Item {
                     width: detailScrollView.availableWidth
                     spacing: 4
 
-                    Label { text: qsTr("Id: %1").arg(apiClient.imageDetail.id); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                    Label { text: qsTr("Created: %1").arg(apiClient.imageDetail.created) }
-                    Label { text: qsTr("Size: %1").arg(apiClient.imageDetail.size) }
-                    Label { text: qsTr("Architecture: %1    OS: %2").arg(apiClient.imageDetail.architecture).arg(apiClient.imageDetail.os) }
-                    Label { text: qsTr("Author: %1").arg(apiClient.imageDetail.author); visible: !!apiClient.imageDetail.author }
-                    Label { text: qsTr("Command: %1").arg(apiClient.imageDetail.command); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.imageDetail.command }
-                    Label { text: qsTr("Working Dir: %1").arg(apiClient.imageDetail.workingDir); visible: !!apiClient.imageDetail.workingDir }
+                    Label { text: qsTr("Id: %1").arg(apiClient.imageDetail.id); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
 
-                    Label { text: qsTr("Tags"); font.bold: true; Layout.topMargin: 8 }
+                    RowLayout {
+                        spacing: 8
+
+                        Label { text: qsTr("Status:"); font.pixelSize: TypeScale.body }
+                        StatusBadge {
+                            text: imageDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
+                            tint: imageDetailPage.inUse ? Colors.success : Colors.disabled
+                        }
+                    }
+
+                    Label { text: qsTr("Created: %1").arg(apiClient.imageDetail.created); font.pixelSize: TypeScale.body }
+                    Label { text: qsTr("Size: %1").arg(apiClient.imageDetail.size); font.pixelSize: TypeScale.body }
+                    Label { text: qsTr("Architecture: %1    OS: %2").arg(apiClient.imageDetail.architecture).arg(apiClient.imageDetail.os); font.pixelSize: TypeScale.body }
+                    Label { text: qsTr("Author: %1").arg(apiClient.imageDetail.author); font.pixelSize: TypeScale.body; visible: !!apiClient.imageDetail.author }
+                    Label { text: qsTr("Command: %1").arg(apiClient.imageDetail.command); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.imageDetail.command }
+                    Label { text: qsTr("Working Dir: %1").arg(apiClient.imageDetail.workingDir); font.pixelSize: TypeScale.body; visible: !!apiClient.imageDetail.workingDir }
+
+                    SectionHeading { text: qsTr("Tags") }
                     Label {
                         visible: !apiClient.imageDetail.tags || apiClient.imageDetail.tags.length === 0
                         text: qsTr("(none)")
+                        font.pixelSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.tags || []
-                        delegate: Label { required property string modelData; text: modelData }
+                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body }
                     }
 
-                    Label { text: qsTr("Digests"); font.bold: true; Layout.topMargin: 8 }
+                    SectionHeading { text: qsTr("Digests") }
                     Label {
                         visible: !apiClient.imageDetail.digests || apiClient.imageDetail.digests.length === 0
                         text: qsTr("(none)")
+                        font.pixelSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.digests || []
-                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     }
 
-                    Label { text: qsTr("Exposed Ports"); font.bold: true; Layout.topMargin: 8 }
+                    SectionHeading { text: qsTr("Exposed Ports") }
                     Label {
                         visible: !apiClient.imageDetail.exposedPorts || apiClient.imageDetail.exposedPorts.length === 0
                         text: qsTr("(none)")
+                        font.pixelSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.exposedPorts || []
-                        delegate: Label { required property string modelData; text: modelData }
+                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body }
                     }
 
-                    Label { text: qsTr("Environment"); font.bold: true; Layout.topMargin: 8 }
+                    SectionHeading { text: qsTr("Environment") }
                     Label {
                         visible: !apiClient.imageDetail.env || apiClient.imageDetail.env.length === 0
                         text: qsTr("(none)")
+                        font.pixelSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.env || []
-                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     }
 
-                    Label { text: qsTr("Labels"); font.bold: true; Layout.topMargin: 8 }
+                    SectionHeading { text: qsTr("Labels") }
                     Label {
                         visible: !apiClient.imageDetail.labels || apiClient.imageDetail.labels.length === 0
                         text: qsTr("(none)")
+                        font.pixelSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.labels || []
-                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     }
 
-                    Label { text: qsTr("Layers"); font.bold: true; Layout.topMargin: 8 }
+                    SectionHeading { text: qsTr("Layers") }
+                    Label {
+                        visible: !apiClient.imageDetail.layers || apiClient.imageDetail.layers.length === 0
+                        text: qsTr("(none)")
+                        font.pixelSize: TypeScale.body
+                        opacity: 0.7
+                    }
                     Repeater {
                         model: apiClient.imageDetail.layers || []
                         delegate: Label {

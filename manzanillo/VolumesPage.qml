@@ -76,7 +76,8 @@ Item {
                             Layout.fillWidth: true
                         }
 
-                        Button {
+                        ToolButton {
+                            icon.name: "view-refresh"
                             text: apiClient.volumesBusy ? qsTr("Loading...") : qsTr("Refresh")
                             enabled: !apiClient.volumesBusy
                             onClicked: apiClient.fetchVolumes()
@@ -110,17 +111,22 @@ Item {
                         }
                     }
 
-                    Label {
-                        visible: volumesList.count === 0 && !apiClient.volumesBusy
-                        text: qsTr("No volumes found")
-                        opacity: 0.7
-                    }
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+
+                        Label {
+                            anchors.centerIn: parent
+                            visible: volumesList.count === 0 && !apiClient.volumesBusy
+                            text: qsTr("No volumes found")
+                            font.pixelSize: TypeScale.body
+                            opacity: 0.7
+                        }
 
                     ListView {
                         id: volumesList
+                        anchors.fill: parent
                         objectName: "volumesListView"
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
                         clip: true
                         spacing: 4
                         model: apiClient.volumesModel
@@ -158,12 +164,22 @@ Item {
                                     Layout.fillWidth: true
                                     spacing: 2
 
-                                    Label {
-                                        text: volumeRowDelegate.name
-                                        font.bold: true
-                                        font.pixelSize: TypeScale.body
+                                    RowLayout {
                                         Layout.fillWidth: true
-                                        elide: Text.ElideRight
+                                        spacing: 8
+
+                                        Label {
+                                            text: volumeRowDelegate.name
+                                            font.bold: true
+                                            font.pixelSize: TypeScale.body
+                                            Layout.fillWidth: true
+                                            elide: Text.ElideRight
+                                        }
+
+                                        StatusBadge {
+                                            text: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                                            tint: volumeRowDelegate.inUse ? Colors.success : Colors.disabled
+                                        }
                                     }
 
                                     Label {
@@ -178,13 +194,6 @@ Item {
                                         opacity: 0.7
                                         Layout.fillWidth: true
                                         elide: Text.ElideRight
-                                    }
-
-                                    Label {
-                                        text: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                        font.pixelSize: TypeScale.caption
-                                        font.italic: true
-                                        color: volumeRowDelegate.inUse ? palette.text : Colors.disabled
                                     }
                                 }
 
@@ -212,6 +221,7 @@ Item {
                                 }
                             }
                         }
+                    }
                     }
                 }
             }

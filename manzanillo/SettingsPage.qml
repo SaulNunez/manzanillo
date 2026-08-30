@@ -44,15 +44,17 @@ Item {
                     Layout.fillWidth: true
                 }
 
-                Button {
+                ToolButton {
                     objectName: "saveSocketPathButton"
+                    icon.name: "document-save"
                     text: qsTr("Save")
                     enabled: socketField.text.length > 0
                     onClicked: apiClient.setSocketPath(socketField.text)
                 }
 
-                Button {
+                ToolButton {
                     objectName: "testConnectionButton"
+                    icon.name: "network-connect"
                     text: apiClient.connectionTestBusy ? qsTr("Testing...") : qsTr("Test Connection")
                     enabled: !apiClient.connectionTestBusy
                     onClicked: apiClient.testConnection()

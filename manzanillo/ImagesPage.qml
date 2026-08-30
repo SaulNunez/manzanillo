@@ -33,8 +33,8 @@ Item {
         tagImageDialog.open()
     }
 
-    function openImageDetail(id, tags) {
-        imageStack.push("ImageDetailPage.qml", { imageId: id, tags: tags })
+    function openImageDetail(id, tags, inUse) {
+        imageStack.push("ImageDetailPage.qml", { imageId: id, tags: tags, inUse: inUse })
     }
 
 
@@ -261,19 +261,22 @@ Item {
                             Layout.fillWidth: true
                         }
 
-                        Button {
+                        ToolButton {
+                            icon.name: "download"
                             text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
                             enabled: !apiClient.imageActionBusy
                             onClicked: imagesPage.openPullImageDialog()
                         }
 
-                        Button {
+                        ToolButton {
+                            icon.name: "run-build"
                             text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
                             enabled: !apiClient.imageActionBusy
                             onClicked: imagesPage.openBuildImageDialog()
                         }
 
-                        Button {
+                        ToolButton {
+                            icon.name: "view-refresh"
                             text: apiClient.imagesBusy ? qsTr("Loading...") : qsTr("Refresh")
                             enabled: !apiClient.imagesBusy
                             onClicked: apiClient.fetchImages()
@@ -307,18 +310,23 @@ Item {
                         }
                     }
 
-                    Label {
-                        visible: imagesList.count === 0 && !apiClient.imagesBusy
-                        text: qsTr("No images found")
-                        opacity: 0.7
-                    }
-
-                    ListView {
-                        id: imagesList
-                        objectName: "imagesListView"
+                    Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        clip: true
+
+                        Label {
+                            anchors.centerIn: parent
+                            visible: imagesList.count === 0 && !apiClient.imagesBusy
+                            text: qsTr("No images found")
+                            font.pixelSize: TypeScale.body
+                            opacity: 0.7
+                        }
+
+                        ListView {
+                            id: imagesList
+                            anchors.fill: parent
+                            objectName: "imagesListView"
+                            clip: true
                         spacing: 4
                         model: apiClient.imagesModel
                         activeFocusOnTab: true
@@ -327,7 +335,7 @@ Item {
                         // (built into ListView), Enter/Return/Space opens its detail page.
                         Keys.onPressed: (event) => {
                             if (currentItem && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
-                                imagesPage.openImageDetail(currentItem.imageId, currentItem.tags)
+                                imagesPage.openImageDetail(currentItem.imageId, currentItem.tags, currentItem.inUse)
                                 event.accepted = true
                             }
                         }
@@ -355,25 +363,28 @@ Item {
                                     Layout.fillWidth: true
                                     spacing: 2
 
-                                    Label {
-                                        text: imageRowDelegate.tags
-                                        font.bold: true
-                                        font.pixelSize: TypeScale.body
+                                    RowLayout {
                                         Layout.fillWidth: true
-                                        elide: Text.ElideRight
+                                        spacing: 8
+
+                                        Label {
+                                            text: imageRowDelegate.tags
+                                            font.bold: true
+                                            font.pixelSize: TypeScale.body
+                                            Layout.fillWidth: true
+                                            elide: Text.ElideRight
+                                        }
+
+                                        StatusBadge {
+                                            text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                                            tint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
+                                        }
                                     }
 
                                     Label {
                                         text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
                                         font.pixelSize: TypeScale.caption
                                         opacity: 0.7
-                                    }
-
-                                    Label {
-                                        text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                        font.pixelSize: TypeScale.caption
-                                        font.italic: true
-                                        color: imageRowDelegate.inUse ? palette.text : Colors.disabled
                                     }
                                 }
 
@@ -408,9 +419,10 @@ Item {
                                 cursorShape: Qt.PointingHandCursor
                                 onTapped: {
                                     imagesList.currentIndex = imageRowDelegate.index
-                                    imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags)
+                                    imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags, imageRowDelegate.inUse)
                                 }
                             }
+                        }
                         }
                     }
                 }

@@ -84,10 +84,9 @@ Item {
                     onClicked: deleteVolumeDialog.open()
                 }
 
-                Label {
+                StatusBadge {
                     text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                    font.italic: true
-                    color: volumeDetailPage.inUse ? palette.text : Colors.disabled
+                    tint: volumeDetailPage.inUse ? Colors.success : Colors.disabled
                 }
             }
 
@@ -103,6 +102,7 @@ Item {
 
                 Label {
                     text: qsTr("Loading...")
+                    font.pixelSize: TypeScale.body
                 }
             }
 
@@ -121,31 +121,33 @@ Item {
                     width: detailScrollView.availableWidth
                     spacing: 4
 
-                    Label { text: qsTr("Driver: %1").arg(apiClient.volumeDetail.driver) }
-                    Label { text: qsTr("Scope: %1").arg(apiClient.volumeDetail.scope) }
-                    Label { text: qsTr("Created: %1").arg(apiClient.volumeDetail.created) }
-                    Label { text: qsTr("Mountpoint: %1").arg(apiClient.volumeDetail.mountpoint); wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    Label { text: qsTr("Driver: %1").arg(apiClient.volumeDetail.driver); font.pixelSize: TypeScale.body }
+                    Label { text: qsTr("Scope: %1").arg(apiClient.volumeDetail.scope); font.pixelSize: TypeScale.body }
+                    Label { text: qsTr("Created: %1").arg(apiClient.volumeDetail.created); font.pixelSize: TypeScale.body }
+                    Label { text: qsTr("Mountpoint: %1").arg(apiClient.volumeDetail.mountpoint); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
 
-                    Label { text: qsTr("Labels"); font.bold: true; Layout.topMargin: 8 }
+                    SectionHeading { text: qsTr("Labels") }
                     Label {
                         visible: !apiClient.volumeDetail.labels || apiClient.volumeDetail.labels.length === 0
                         text: qsTr("(none)")
+                        font.pixelSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.volumeDetail.labels || []
-                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     }
 
-                    Label { text: qsTr("Options"); font.bold: true; Layout.topMargin: 8 }
+                    SectionHeading { text: qsTr("Options") }
                     Label {
                         visible: !apiClient.volumeDetail.options || apiClient.volumeDetail.options.length === 0
                         text: qsTr("(none)")
+                        font.pixelSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.volumeDetail.options || []
-                        delegate: Label { required property string modelData; text: modelData; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     }
                 }
             }
