@@ -103,6 +103,16 @@ Item {
                     clip: true
                     spacing: 4
                     model: apiClient.volumesModel
+                    activeFocusOnTab: true
+
+                    // Keyboard equivalent of tapping a row: arrow keys move currentIndex
+                    // (built into ListView), Enter/Return/Space opens its detail page.
+                    Keys.onPressed: (event) => {
+                        if (currentItem && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
+                            volumesPage.openVolumeDetail(currentItem.name, currentItem.inUse)
+                            event.accepted = true
+                        }
+                    }
 
                     delegate: Frame {
                         id: volumeRowDelegate
@@ -112,8 +122,13 @@ Item {
                         required property string created
                         required property bool inUse
                         width: volumesList.width
+                        // Frame only derives its implicit size automatically from a single
+                        // content child; the focus-ring Rectangle below makes that two, so
+                        // size it explicitly off the RowLayout instead.
+                        implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
 
                         RowLayout {
+                            id: contentRow
                             anchors.fill: parent
                             spacing: 8
 
@@ -158,9 +173,20 @@ Item {
                             }
                         }
 
+                        Rectangle {
+                            anchors.fill: parent
+                            color: "transparent"
+                            border.color: palette.highlight
+                            border.width: 2
+                            visible: volumeRowDelegate.ListView.isCurrentItem && volumesList.activeFocus
+                        }
+
                         TapHandler {
                             cursorShape: Qt.PointingHandCursor
-                            onTapped: volumesPage.openVolumeDetail(volumeRowDelegate.name, volumeRowDelegate.inUse)
+                            onTapped: {
+                                volumesList.currentIndex = index
+                                volumesPage.openVolumeDetail(volumeRowDelegate.name, volumeRowDelegate.inUse)
+                            }
                         }
                     }
                 }

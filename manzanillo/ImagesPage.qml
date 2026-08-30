@@ -300,6 +300,16 @@ Item {
                     clip: true
                     spacing: 4
                     model: apiClient.imagesModel
+                    activeFocusOnTab: true
+
+                    // Keyboard equivalent of tapping a row: arrow keys move currentIndex
+                    // (built into ListView), Enter/Return/Space opens its detail page.
+                    Keys.onPressed: (event) => {
+                        if (currentItem && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
+                            imagesPage.openImageDetail(currentItem.imageId, currentItem.tags)
+                            event.accepted = true
+                        }
+                    }
 
                     delegate: Frame {
                         id: imageRowDelegate
@@ -309,8 +319,13 @@ Item {
                         required property string created
                         required property bool inUse
                         width: imagesList.width
+                        // Frame only derives its implicit size automatically from a single
+                        // content child; the focus-ring Rectangle below makes that two, so
+                        // size it explicitly off the RowLayout instead.
+                        implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
 
                         RowLayout {
+                            id: contentRow
                             anchors.fill: parent
                             spacing: 8
 
@@ -358,9 +373,20 @@ Item {
                             }
                         }
 
+                        Rectangle {
+                            anchors.fill: parent
+                            color: "transparent"
+                            border.color: palette.highlight
+                            border.width: 2
+                            visible: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
+                        }
+
                         TapHandler {
                             cursorShape: Qt.PointingHandCursor
-                            onTapped: imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags)
+                            onTapped: {
+                                imagesList.currentIndex = index
+                                imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags)
+                            }
                         }
                     }
                 }

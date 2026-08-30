@@ -160,6 +160,16 @@ Item {
                             clip: true
                             spacing: 4
                             model: apiClient.filteredContainersModel
+                            activeFocusOnTab: true
+
+                            // Keyboard equivalent of tapping a row: arrow keys move currentIndex
+                            // (built into ListView), Enter/Return/Space opens its detail page.
+                            Keys.onPressed: (event) => {
+                                if (currentItem && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
+                                    containersPage.openContainerDetail(currentItem.containerId)
+                                    event.accepted = true
+                                }
+                            }
 
                             delegate: Frame {
                                 id: containerRowDelegate
@@ -169,8 +179,13 @@ Item {
                                 required property string status
                                 required property string state
                                 width: containersList.width
+                                // Frame only derives its implicit size automatically from a single
+                                // content child; the focus-ring Rectangle below makes that two, so
+                                // size it explicitly off the RowLayout instead.
+                                implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
 
                                 RowLayout {
+                                    id: contentRow
                                     anchors.fill: parent
                                     spacing: 8
 
@@ -210,9 +225,20 @@ Item {
                                     }
                                 }
 
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: "transparent"
+                                    border.color: palette.highlight
+                                    border.width: 2
+                                    visible: containerRowDelegate.ListView.isCurrentItem && containersList.activeFocus
+                                }
+
                                 TapHandler {
                                     cursorShape: Qt.PointingHandCursor
-                                    onTapped: containersPage.openContainerDetail(containerRowDelegate.containerId)
+                                    onTapped: {
+                                        containersList.currentIndex = index
+                                        containersPage.openContainerDetail(containerRowDelegate.containerId)
+                                    }
                                 }
                             }
                         }
@@ -309,8 +335,21 @@ Item {
                                                             id: containerDelegate
                                                             required property var modelData
                                                             Layout.fillWidth: true
+                                                            activeFocusOnTab: true
+                                                            // Frame only derives its implicit size automatically from a single
+                                                            // content child; the focus-ring Rectangle below makes that two, so
+                                                            // size it explicitly off the RowLayout instead.
+                                                            implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
+
+                                                            Keys.onPressed: (event) => {
+                                                                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                                                                    containersPage.openContainerDetail(containerDelegate.modelData.id)
+                                                                    event.accepted = true
+                                                                }
+                                                            }
 
                                                             RowLayout {
+                                                                id: contentRow
                                                                 anchors.fill: parent
                                                                 spacing: 8
 
@@ -346,6 +385,14 @@ Item {
                                                                         ? apiClient.stopContainer(containerDelegate.modelData.id)
                                                                         : apiClient.startContainer(containerDelegate.modelData.id)
                                                                 }
+                                                            }
+
+                                                            Rectangle {
+                                                                anchors.fill: parent
+                                                                color: "transparent"
+                                                                border.color: palette.highlight
+                                                                border.width: 2
+                                                                visible: containerDelegate.activeFocus
                                                             }
 
                                                             TapHandler {
