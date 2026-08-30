@@ -252,6 +252,7 @@ def _summarize_container_detail(data: dict) -> dict:
         "networks": [
             f"{name}: {info.get('IPAddress') or '(no IP)'}" for name, info in sorted(networks.items())
         ],
+        "tty": config.get("Tty", False),
     }
 
 
@@ -376,6 +377,10 @@ class ApiClient(QObject):
     containerActionBusyChanged = Signal()
     containerActionErrorOccurred = Signal(str)
 
+    containerLogsChanged = Signal()
+    containerLogsStreamingChanged = Signal()
+    containerLogsErrorOccurred = Signal(str)
+
     imagesErrorOccurred = Signal(str)
     imagesBusyChanged = Signal()
 
@@ -413,6 +418,9 @@ class ApiClient(QObject):
         self._connection_test_busy = False
         self._container_detail_busy = False
         self._container_action_busy = False
+        self._container_logs = ""
+        self._container_logs_streaming = False
+        self._container_logs_task = None
         self._volume_action_busy = False
         self._volume_detail_busy = False
         self._volume_detail = {}
@@ -607,6 +615,75 @@ class ApiClient(QObject):
             self.containerActionErrorOccurred.emit(_error_message(error))
         finally:
             self._set_container_action_busy(False)
+
+    @Property(str, notify=containerLogsChanged)
+    def containerLogs(self):
+        return self._container_logs
+
+    @Property(bool, notify=containerLogsStreamingChanged)
+    def containerLogsStreaming(self):
+        return self._container_logs_streaming
+
+    def _set_container_logs_streaming(self, value: bool):
+        if self._container_logs_streaming != value:
+            self._container_logs_streaming = value
+            self.containerLogsStreamingChanged.emit()
+
+    @Slot(str)
+    def startContainerLogs(self, container_id: str):
+        if self._container_logs_task is not None and not self._container_logs_task.done():
+            self._container_logs_task.cancel()
+        self._container_logs_task = asyncio.ensure_future(self._stream_container_logs(container_id))
+
+    @Slot()
+    def stopContainerLogs(self):
+        if self._container_logs_task is not None and not self._container_logs_task.done():
+            self._container_logs_task.cancel()
+
+    async def _stream_container_logs(self, container_id: str):
+        self._container_logs = ""
+        self.containerLogsChanged.emit()
+        self._set_container_logs_streaming(True)
+        tty = bool(self._container_detail.get("tty"))
+        buffer = bytearray()
+        try:
+            # follow=true keeps the connection open indefinitely, so this request has
+            # no fixed time budget, same reasoning as the pull/build streams.
+            async with self._client.stream(
+                "GET",
+                f"/containers/{container_id}/logs",
+                params={"stdout": "true", "stderr": "true", "follow": "true", "tail": "200", "timestamps": "true"},
+                timeout=None,
+            ) as response:
+                response.raise_for_status()
+                async for chunk in response.aiter_bytes():
+                    if not chunk:
+                        continue
+                    if tty:
+                        self._container_logs += chunk.decode("utf-8", errors="replace")
+                        self.containerLogsChanged.emit()
+                        continue
+
+                    # Non-TTY logs are multiplexed: each write is wrapped in an
+                    # 8-byte header (stream type, 3 reserved bytes, big-endian
+                    # uint32 payload size) followed by that many payload bytes. A
+                    # frame can split across chunks, so frames are parsed out of a
+                    # persistent buffer rather than assuming one chunk = one frame.
+                    buffer.extend(chunk)
+                    while len(buffer) >= 8:
+                        payload_size = int.from_bytes(buffer[4:8], "big")
+                        if len(buffer) < 8 + payload_size:
+                            break
+                        payload = bytes(buffer[8:8 + payload_size])
+                        del buffer[:8 + payload_size]
+                        self._container_logs += payload.decode("utf-8", errors="replace")
+                        self.containerLogsChanged.emit()
+        except asyncio.CancelledError:
+            pass
+        except (httpx.HTTPError, OSError) as error:
+            self.containerLogsErrorOccurred.emit(_error_message(error))
+        finally:
+            self._set_container_logs_streaming(False)
 
     @Slot()
     def fetchImages(self):
