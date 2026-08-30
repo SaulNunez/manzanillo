@@ -2,6 +2,7 @@ module manzanillo
 
 Main 1.0 Main.qml
 ContainersPage 1.0 ContainersPage.qml
+ContainerDetailPage 1.0 ContainerDetailPage.qml
 ImagesPage 1.0 ImagesPage.qml
 VolumesPage 1.0 VolumesPage.qml
 SettingsPage 1.0 SettingsPage.qml
