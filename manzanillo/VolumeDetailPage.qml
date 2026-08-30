@@ -87,7 +87,7 @@ Item {
                 Label {
                     text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
                     font.italic: true
-                    color: volumeDetailPage.inUse ? palette.text : "gray"
+                    color: volumeDetailPage.inUse ? palette.text : "#666666"
                 }
             }
 

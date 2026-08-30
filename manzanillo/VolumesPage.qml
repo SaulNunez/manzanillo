@@ -139,6 +139,7 @@ Item {
                                 Label {
                                     text: volumeRowDelegate.name
                                     font.bold: true
+                                    font.pixelSize: 14
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
@@ -161,7 +162,7 @@ Item {
                                     text: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
                                     font.pixelSize: 12
                                     font.italic: true
-                                    color: volumeRowDelegate.inUse ? palette.text : "gray"
+                                    color: volumeRowDelegate.inUse ? palette.text : "#666666"
                                 }
                             }
 

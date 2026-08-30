@@ -116,11 +116,17 @@ Item {
                     }
                 }
 
+                Label {
+                    text: qsTr("Search")
+                    font.pixelSize: 12
+                }
+
                 TextField {
                     id: searchField
                     objectName: "containerSearchField"
                     Layout.fillWidth: true
                     placeholderText: qsTr("Search containers by name or image…")
+                    Accessible.name: qsTr("Search containers by name or image")
                     onTextChanged: {
                         apiClient.filteredContainersModel.setFilterText(text)
                         containersPage.searchText = text
@@ -196,6 +202,7 @@ Item {
                                         Label {
                                             text: containerRowDelegate.names
                                             font.bold: true
+                                            font.pixelSize: 14
                                             Layout.fillWidth: true
                                             elide: Text.ElideRight
                                         }
@@ -278,6 +285,11 @@ Item {
                                         ToolButton {
                                             objectName: "projectToggle_" + projectDelegate.index
                                             text: projectDelegate.expanded ? "▼" : "▶"
+                                            Accessible.name: projectDelegate.expanded
+                                                ? qsTr("Collapse %1").arg(projectDelegate.modelData.project)
+                                                : qsTr("Expand %1").arg(projectDelegate.modelData.project)
+                                            ToolTip.visible: hovered
+                                            ToolTip.text: Accessible.name
                                             onClicked: containersPage.toggleProjectExpanded(projectDelegate.modelData.project)
                                         }
 
@@ -313,6 +325,11 @@ Item {
                                                     ToolButton {
                                                         objectName: "serviceToggle_" + serviceDelegate.index
                                                         text: serviceDelegate.expanded ? "▼" : "▶"
+                                                        Accessible.name: serviceDelegate.expanded
+                                                            ? qsTr("Collapse %1").arg(serviceDelegate.modelData.service)
+                                                            : qsTr("Expand %1").arg(serviceDelegate.modelData.service)
+                                                        ToolTip.visible: hovered
+                                                        ToolTip.text: Accessible.name
                                                         onClicked: containersPage.toggleServiceExpanded(projectDelegate.modelData.project, serviceDelegate.modelData.service)
                                                     }
 
@@ -360,6 +377,7 @@ Item {
                                                                     Label {
                                                                         text: containerDelegate.modelData.name
                                                                         font.bold: true
+                                                                        font.pixelSize: 14
                                                                     }
 
                                                                     Label {

@@ -336,6 +336,7 @@ Item {
                                 Label {
                                     text: imageRowDelegate.tags
                                     font.bold: true
+                                    font.pixelSize: 14
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
@@ -350,7 +351,7 @@ Item {
                                     text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
                                     font.pixelSize: 12
                                     font.italic: true
-                                    color: imageRowDelegate.inUse ? palette.text : "gray"
+                                    color: imageRowDelegate.inUse ? palette.text : "#666666"
                                 }
                             }
 
