@@ -18,6 +18,13 @@ Item {
         pullImageDialog.open()
     }
 
+    function openBuildImageDialog() {
+        buildContextField.text = ""
+        buildDockerfileField.text = ""
+        buildTagField.text = ""
+        buildImageDialog.open()
+    }
+
     function openTagImageDialog(id) {
         tagImageDialog.imageId = id
         tagRepositoryField.text = ""
@@ -89,6 +96,64 @@ Item {
     }
 
     Dialog {
+        id: buildImageDialog
+        objectName: "buildImageDialog"
+
+        modal: true
+        title: qsTr("Build image")
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        width: 420
+        anchors.centerIn: Overlay.overlay
+
+        onAccepted: apiClient.buildImage(
+            buildContextField.text.trim(),
+            buildDockerfileField.text.trim(),
+            buildTagField.text.trim())
+
+        contentItem: ColumnLayout {
+            width: buildImageDialog.availableWidth
+            spacing: 8
+
+            Label {
+                text: qsTr("Build context directory")
+                Layout.fillWidth: true
+            }
+
+            TextField {
+                id: buildContextField
+                objectName: "buildContextField"
+                Layout.fillWidth: true
+                placeholderText: qsTr("e.g. /home/me/my-project")
+            }
+
+            Label {
+                text: qsTr("Dockerfile (optional, relative to context, defaults to \"Dockerfile\")")
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            TextField {
+                id: buildDockerfileField
+                objectName: "buildDockerfileField"
+                Layout.fillWidth: true
+                placeholderText: qsTr("Dockerfile")
+            }
+
+            Label {
+                text: qsTr("Tag (optional)")
+                Layout.fillWidth: true
+            }
+
+            TextField {
+                id: buildTagField
+                objectName: "buildTagField"
+                Layout.fillWidth: true
+                placeholderText: qsTr("e.g. myimage:latest")
+            }
+        }
+    }
+
+    Dialog {
         id: tagImageDialog
         objectName: "tagImageDialog"
         property string imageId: ""
@@ -149,6 +214,12 @@ Item {
                 text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
                 enabled: !apiClient.imageActionBusy
                 onClicked: imagesPage.openPullImageDialog()
+            }
+
+            Button {
+                text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
+                enabled: !apiClient.imageActionBusy
+                onClicked: imagesPage.openBuildImageDialog()
             }
 
             Button {

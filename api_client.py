@@ -1,6 +1,9 @@
 # This Python file uses the following encoding: utf-8
 import asyncio
+import io
 import json
+import os
+import tarfile
 from datetime import datetime
 
 import httpx
@@ -39,6 +42,15 @@ def _format_timestamp(value) -> str:
         return datetime.fromisoformat(str(value).replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M")
     except ValueError:
         return str(value)
+
+
+def _build_context_tar(context_dir: str) -> bytes:
+    # Builds the whole context into memory rather than streaming it, which is
+    # simple but means very large build contexts will use proportional memory.
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w") as tar:
+        tar.add(context_dir, arcname=".")
+    return buffer.getvalue()
 
 
 class ImageListModel(QAbstractListModel):
@@ -629,6 +641,58 @@ class ApiClient(QObject):
             response.raise_for_status()
             await self._fetch_images()
         except (httpx.HTTPError, OSError) as error:
+            self.imageActionErrorOccurred.emit(_error_message(error))
+        finally:
+            self._set_image_action_busy(False)
+
+    @Slot(str, str, str)
+    def buildImage(self, context_path: str, dockerfile: str, tag: str):
+        asyncio.ensure_future(self._build_image(context_path, dockerfile, tag))
+
+    async def _build_image(self, context_path: str, dockerfile: str, tag: str):
+        self._set_image_action_busy(True)
+        try:
+            context_path = context_path.strip()
+            dockerfile = dockerfile.strip() or "Dockerfile"
+            if not os.path.isdir(context_path):
+                raise RuntimeError(f"Not a directory: {context_path}")
+            if not os.path.isfile(os.path.join(context_path, dockerfile)):
+                raise RuntimeError(f"Dockerfile not found: {os.path.join(context_path, dockerfile)}")
+
+            # Tarring the context directory is blocking I/O, so it runs off the Qt
+            # event loop thread to avoid freezing the UI while it's built.
+            loop = asyncio.get_event_loop()
+            context_tar = await loop.run_in_executor(None, _build_context_tar, context_path)
+
+            params = {"dockerfile": dockerfile}
+            if tag:
+                params["t"] = tag
+
+            # As with pulling, a build has no fixed time budget, so its timeout is
+            # disabled rather than reusing the client's normal 5s default.
+            async with self._client.stream(
+                "POST",
+                "/build",
+                params=params,
+                content=context_tar,
+                headers={"Content-Type": "application/x-tar"},
+                timeout=None,
+            ) as response:
+                response.raise_for_status()
+                build_error = None
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        payload = json.loads(line)
+                    except ValueError:
+                        continue
+                    if "error" in payload:
+                        build_error = payload["error"]
+                if build_error:
+                    raise RuntimeError(build_error)
+            await self._fetch_images()
+        except (httpx.HTTPError, OSError, RuntimeError) as error:
             self.imageActionErrorOccurred.emit(_error_message(error))
         finally:
             self._set_image_action_busy(False)
