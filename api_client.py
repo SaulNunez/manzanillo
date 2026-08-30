@@ -278,6 +278,21 @@ def _summarize_image_detail(data: dict) -> dict:
     }
 
 
+def _summarize_volume_detail(data: dict) -> dict:
+    labels = data.get("Labels") or {}
+    options = data.get("Options") or {}
+
+    return {
+        "name": data.get("Name", ""),
+        "driver": data.get("Driver", ""),
+        "mountpoint": data.get("Mountpoint", ""),
+        "created": _format_timestamp(data.get("CreatedAt")),
+        "scope": data.get("Scope", ""),
+        "labels": [f"{key}: {value}" for key, value in sorted(labels.items())],
+        "options": [f"{key}: {value}" for key, value in sorted(options.items())],
+    }
+
+
 def _group_compose_projects(containers: list[dict]) -> list[dict]:
     projects: dict[str, dict[str, list[dict]]] = {}
     for container in containers:
@@ -375,6 +390,10 @@ class ApiClient(QObject):
     volumesErrorOccurred = Signal(str)
     volumesBusyChanged = Signal()
 
+    volumeDetailChanged = Signal()
+    volumeDetailBusyChanged = Signal()
+    volumeDetailErrorOccurred = Signal(str)
+
     volumeActionBusyChanged = Signal()
     volumeActionErrorOccurred = Signal(str)
 
@@ -395,6 +414,8 @@ class ApiClient(QObject):
         self._container_detail_busy = False
         self._container_action_busy = False
         self._volume_action_busy = False
+        self._volume_detail_busy = False
+        self._volume_detail = {}
         self._image_detail_busy = False
         self._image_detail = {}
         self._image_action_busy = False
@@ -790,6 +811,35 @@ class ApiClient(QObject):
             self.volumesErrorOccurred.emit(str(error))
         finally:
             self._set_volumes_busy(False)
+
+    @Property(bool, notify=volumeDetailBusyChanged)
+    def volumeDetailBusy(self):
+        return self._volume_detail_busy
+
+    def _set_volume_detail_busy(self, value: bool):
+        if self._volume_detail_busy != value:
+            self._volume_detail_busy = value
+            self.volumeDetailBusyChanged.emit()
+
+    @Property("QVariant", notify=volumeDetailChanged)
+    def volumeDetail(self):
+        return self._volume_detail
+
+    @Slot(str)
+    def fetchVolumeDetail(self, name: str):
+        asyncio.ensure_future(self._fetch_volume_detail(name))
+
+    async def _fetch_volume_detail(self, name: str):
+        self._set_volume_detail_busy(True)
+        try:
+            response = await self._client.get(f"/volumes/{name}")
+            response.raise_for_status()
+            self._volume_detail = _summarize_volume_detail(response.json())
+            self.volumeDetailChanged.emit()
+        except (httpx.HTTPError, OSError) as error:
+            self.volumeDetailErrorOccurred.emit(str(error))
+        finally:
+            self._set_volume_detail_busy(False)
 
     @Property(bool, notify=volumeActionBusyChanged)
     def volumeActionBusy(self):

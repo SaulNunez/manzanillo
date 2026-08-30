@@ -6,4 +6,5 @@ ContainerDetailPage 1.0 ContainerDetailPage.qml
 ImagesPage 1.0 ImagesPage.qml
 ImageDetailPage 1.0 ImageDetailPage.qml
 VolumesPage 1.0 VolumesPage.qml
+VolumeDetailPage 1.0 VolumeDetailPage.qml
 SettingsPage 1.0 SettingsPage.qml
