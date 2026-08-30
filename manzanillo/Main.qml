@@ -8,6 +8,12 @@ Window {
     height: 600
     visible: true
     title: qsTr("Manzanillo")
+    // Window.color is a plain canvas fill, independent of the Controls palette
+    // system - it defaults to white and won't follow dark mode on its own,
+    // even though individual controls (which read palette.* directly) do.
+    // Every Frame/Rectangle in the app that doesn't paint its own opaque
+    // background shows this color through, so it has to track the palette too.
+    color: palette.window
 
     // Read once here rather than via the LayoutMirroring attached property on Drawer/StackLayout
     // below - LayoutMirroring only attaches to Items and Windows, not Popups (Drawer).
