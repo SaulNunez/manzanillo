@@ -255,6 +255,29 @@ def _summarize_container_detail(data: dict) -> dict:
     }
 
 
+def _summarize_image_detail(data: dict) -> dict:
+    config = data.get("Config") or {}
+    command_parts = (config.get("Entrypoint") or []) + (config.get("Cmd") or [])
+    labels = config.get("Labels") or {}
+
+    return {
+        "id": data.get("Id", ""),
+        "tags": data.get("RepoTags") or [],
+        "digests": data.get("RepoDigests") or [],
+        "created": _format_timestamp(data.get("Created")),
+        "size": ImageListModel._format_size(data.get("Size", 0)),
+        "architecture": data.get("Architecture", ""),
+        "os": data.get("Os", ""),
+        "author": data.get("Author", ""),
+        "command": " ".join(command_parts),
+        "workingDir": config.get("WorkingDir", ""),
+        "env": config.get("Env") or [],
+        "exposedPorts": sorted((config.get("ExposedPorts") or {}).keys()),
+        "labels": [f"{key}: {value}" for key, value in sorted(labels.items())],
+        "layers": (data.get("RootFS") or {}).get("Layers") or [],
+    }
+
+
 def _group_compose_projects(containers: list[dict]) -> list[dict]:
     projects: dict[str, dict[str, list[dict]]] = {}
     for container in containers:
@@ -341,6 +364,10 @@ class ApiClient(QObject):
     imagesErrorOccurred = Signal(str)
     imagesBusyChanged = Signal()
 
+    imageDetailChanged = Signal()
+    imageDetailBusyChanged = Signal()
+    imageDetailErrorOccurred = Signal(str)
+
     imageActionBusyChanged = Signal()
     imageActionErrorOccurred = Signal(str)
     buildLogChanged = Signal()
@@ -368,6 +395,8 @@ class ApiClient(QObject):
         self._container_detail_busy = False
         self._container_action_busy = False
         self._volume_action_busy = False
+        self._image_detail_busy = False
+        self._image_detail = {}
         self._image_action_busy = False
         self._build_log = ""
         self._containers_model = ContainerListModel(self)
@@ -573,6 +602,35 @@ class ApiClient(QObject):
         finally:
             self._set_images_busy(False)
 
+    @Property(bool, notify=imageDetailBusyChanged)
+    def imageDetailBusy(self):
+        return self._image_detail_busy
+
+    def _set_image_detail_busy(self, value: bool):
+        if self._image_detail_busy != value:
+            self._image_detail_busy = value
+            self.imageDetailBusyChanged.emit()
+
+    @Property("QVariant", notify=imageDetailChanged)
+    def imageDetail(self):
+        return self._image_detail
+
+    @Slot(str)
+    def fetchImageDetail(self, image_id: str):
+        asyncio.ensure_future(self._fetch_image_detail(image_id))
+
+    async def _fetch_image_detail(self, image_id: str):
+        self._set_image_detail_busy(True)
+        try:
+            response = await self._client.get(f"/images/{image_id}/json")
+            response.raise_for_status()
+            self._image_detail = _summarize_image_detail(response.json())
+            self.imageDetailChanged.emit()
+        except (httpx.HTTPError, OSError) as error:
+            self.imageDetailErrorOccurred.emit(str(error))
+        finally:
+            self._set_image_detail_busy(False)
+
     @Property(bool, notify=imageActionBusyChanged)
     def imageActionBusy(self):
         return self._image_action_busy
@@ -651,6 +709,7 @@ class ApiClient(QObject):
                 params["tag"] = tag
             response = await self._client.post(f"/images/{image_id}/tag", params=params)
             response.raise_for_status()
+            await self._fetch_image_detail(image_id)
             await self._fetch_images()
         except (httpx.HTTPError, OSError) as error:
             self.imageActionErrorOccurred.emit(_error_message(error))

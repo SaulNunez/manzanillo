@@ -63,18 +63,6 @@ Item {
         return projects
     }
 
-    Connections {
-        target: apiClient
-        function onContainersErrorOccurred(message) {
-            errorLabel.text = message
-            errorLabel.visible = true
-        }
-        function onContainerActionErrorOccurred(message) {
-            errorLabel.text = message
-            errorLabel.visible = true
-        }
-    }
-
     StackView {
         id: containerStack
         objectName: "containerStack"
@@ -113,6 +101,18 @@ Item {
                     color: "red"
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
+                }
+
+                Connections {
+                    target: apiClient
+                    function onContainersErrorOccurred(message) {
+                        errorLabel.text = message
+                        errorLabel.visible = true
+                    }
+                    function onContainerActionErrorOccurred(message) {
+                        errorLabel.text = message
+                        errorLabel.visible = true
+                    }
                 }
 
                 TextField {

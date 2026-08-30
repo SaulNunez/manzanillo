@@ -32,17 +32,10 @@ Item {
         tagImageDialog.open()
     }
 
-    Connections {
-        target: apiClient
-        function onImagesErrorOccurred(message) {
-            errorLabel.text = message
-            errorLabel.visible = true
-        }
-        function onImageActionErrorOccurred(message) {
-            errorLabel.text = message
-            errorLabel.visible = true
-        }
+    function openImageDetail(id, tags) {
+        imageStack.push("ImageDetailPage.qml", { imageId: id, tags: tags })
     }
+
 
     Dialog {
         id: deleteImageDialog
@@ -228,115 +221,145 @@ Item {
         }
     }
 
-    ColumnLayout {
+    StackView {
+        id: imageStack
+        objectName: "imageStack"
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
+        initialItem: imageListComponent
+    }
 
-        RowLayout {
-            Layout.fillWidth: true
+    Component {
+        id: imageListComponent
 
-            Label {
-                text: qsTr("Images")
-                font.pixelSize: 20
-                Layout.fillWidth: true
-            }
-
-            Button {
-                text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
-                enabled: !apiClient.imageActionBusy
-                onClicked: imagesPage.openPullImageDialog()
-            }
-
-            Button {
-                text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
-                enabled: !apiClient.imageActionBusy
-                onClicked: imagesPage.openBuildImageDialog()
-            }
-
-            Button {
-                text: apiClient.imagesBusy ? qsTr("Loading...") : qsTr("Refresh")
-                enabled: !apiClient.imagesBusy
-                onClicked: apiClient.fetchImages()
-            }
-        }
-
-        Label {
-            id: errorLabel
-            visible: false
-            color: "red"
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
-        }
-
-        Label {
-            visible: imagesList.count === 0 && !apiClient.imagesBusy
-            text: qsTr("No images found")
-            opacity: 0.7
-        }
-
-        ListView {
-            id: imagesList
-            objectName: "imagesListView"
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            spacing: 4
-            model: apiClient.imagesModel
-
-            delegate: Frame {
-                id: imageRowDelegate
-                required property string imageId
-                required property string tags
-                required property string size
-                required property string created
-                required property bool inUse
-                width: imagesList.width
+        Item {
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 8
 
                 RowLayout {
-                    anchors.fill: parent
-                    spacing: 8
+                    Layout.fillWidth: true
 
-                    ColumnLayout {
+                    Label {
+                        text: qsTr("Images")
+                        font.pixelSize: 20
                         Layout.fillWidth: true
-                        spacing: 2
-
-                        Label {
-                            text: imageRowDelegate.tags
-                            font.bold: true
-                            Layout.fillWidth: true
-                            elide: Text.ElideRight
-                        }
-
-                        Label {
-                            text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
-                            font.pixelSize: 12
-                            opacity: 0.7
-                        }
-
-                        Label {
-                            text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                            font.pixelSize: 12
-                            font.italic: true
-                            color: imageRowDelegate.inUse ? palette.text : "gray"
-                        }
                     }
 
-                    ColumnLayout {
-                        spacing: 4
+                    Button {
+                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
+                        enabled: !apiClient.imageActionBusy
+                        onClicked: imagesPage.openPullImageDialog()
+                    }
 
-                        Button {
-                            objectName: "tagImageButton_" + imageRowDelegate.imageId
-                            text: qsTr("Tag")
-                            enabled: !apiClient.imageActionBusy
-                            onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
+                    Button {
+                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
+                        enabled: !apiClient.imageActionBusy
+                        onClicked: imagesPage.openBuildImageDialog()
+                    }
+
+                    Button {
+                        text: apiClient.imagesBusy ? qsTr("Loading...") : qsTr("Refresh")
+                        enabled: !apiClient.imagesBusy
+                        onClicked: apiClient.fetchImages()
+                    }
+                }
+
+                Label {
+                    id: errorLabel
+                    visible: false
+                    color: "red"
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+
+                Connections {
+                    target: apiClient
+                    function onImagesErrorOccurred(message) {
+                        errorLabel.text = message
+                        errorLabel.visible = true
+                    }
+                    function onImageActionErrorOccurred(message) {
+                        errorLabel.text = message
+                        errorLabel.visible = true
+                    }
+                }
+
+                Label {
+                    visible: imagesList.count === 0 && !apiClient.imagesBusy
+                    text: qsTr("No images found")
+                    opacity: 0.7
+                }
+
+                ListView {
+                    id: imagesList
+                    objectName: "imagesListView"
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    spacing: 4
+                    model: apiClient.imagesModel
+
+                    delegate: Frame {
+                        id: imageRowDelegate
+                        required property string imageId
+                        required property string tags
+                        required property string size
+                        required property string created
+                        required property bool inUse
+                        width: imagesList.width
+
+                        RowLayout {
+                            anchors.fill: parent
+                            spacing: 8
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                Label {
+                                    text: imageRowDelegate.tags
+                                    font.bold: true
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+
+                                Label {
+                                    text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
+                                    font.pixelSize: 12
+                                    opacity: 0.7
+                                }
+
+                                Label {
+                                    text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                                    font.pixelSize: 12
+                                    font.italic: true
+                                    color: imageRowDelegate.inUse ? palette.text : "gray"
+                                }
+                            }
+
+                            ColumnLayout {
+                                spacing: 4
+
+                                Button {
+                                    objectName: "tagImageButton_" + imageRowDelegate.imageId
+                                    text: qsTr("Tag")
+                                    enabled: !apiClient.imageActionBusy
+                                    onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
+                                }
+
+                                Button {
+                                    objectName: "deleteImageButton_" + imageRowDelegate.imageId
+                                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
+                                    enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
+                                    onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
+                                }
+                            }
                         }
 
-                        Button {
-                            objectName: "deleteImageButton_" + imageRowDelegate.imageId
-                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                            enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
-                            onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
+                        TapHandler {
+                            cursorShape: Qt.PointingHandCursor
+                            onTapped: imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags)
                         }
                     }
                 }
