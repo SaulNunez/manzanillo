@@ -61,7 +61,7 @@ Item {
 
                 Label {
                     text: volumeDetailPage.volumeName
-                    font.pixelSize: 20
+                    font.pixelSize: TypeScale.title
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
@@ -87,13 +87,23 @@ Item {
                 Label {
                     text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
                     font.italic: true
-                    color: volumeDetailPage.inUse ? palette.text : "#666666"
+                    color: volumeDetailPage.inUse ? palette.text : Colors.disabled
                 }
             }
 
-            Label {
+            RowLayout {
                 visible: apiClient.volumeDetailBusy
-                text: qsTr("Loading...")
+                spacing: 8
+
+                BusyIndicator {
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    running: apiClient.volumeDetailBusy
+                }
+
+                Label {
+                    text: qsTr("Loading...")
+                }
             }
 
             DetailErrorLabel {

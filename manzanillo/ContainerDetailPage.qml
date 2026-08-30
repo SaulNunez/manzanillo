@@ -43,7 +43,7 @@ Item {
 
                 Label {
                     text: apiClient.containerDetail.name || qsTr("Container")
-                    font.pixelSize: 20
+                    font.pixelSize: TypeScale.title
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
@@ -56,9 +56,19 @@ Item {
             Layout.margins: 12
             spacing: 8
 
-            Label {
+            RowLayout {
                 visible: apiClient.containerDetailBusy
-                text: qsTr("Loading...")
+                spacing: 8
+
+                BusyIndicator {
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    running: apiClient.containerDetailBusy
+                }
+
+                Label {
+                    text: qsTr("Loading...")
+                }
             }
 
             DetailErrorLabel {
@@ -190,7 +200,7 @@ Item {
                             wrapMode: TextArea.NoWrap
                             text: apiClient.containerLogs
                             font.family: "monospace"
-                            font.pixelSize: 11
+                            font.pixelSize: TypeScale.monospace
                             onTextChanged: cursorPosition = length
                         }
                     }

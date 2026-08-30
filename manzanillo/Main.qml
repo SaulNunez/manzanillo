@@ -9,12 +9,19 @@ Window {
     visible: true
     title: qsTr("Manzanillo")
 
+    // Read once here rather than via the LayoutMirroring attached property on Drawer/StackLayout
+    // below - LayoutMirroring only attaches to Items and Windows, not Popups (Drawer).
+    readonly property bool rtl: Qt.application.layoutDirection === Qt.RightToLeft
+
+    LayoutMirroring.enabled: rtl
+    LayoutMirroring.childrenInherit: true
+
     Drawer {
         id: navDrawer
         objectName: "navDrawer"
         width: 180
         height: parent.height
-        edge: Qt.LeftEdge
+        edge: rtl ? Qt.RightEdge : Qt.LeftEdge
         modal: false
         interactive: false
         visible: true
@@ -37,7 +44,8 @@ Window {
 
     StackLayout {
         anchors.fill: parent
-        anchors.leftMargin: navDrawer.width
+        anchors.leftMargin: rtl ? 0 : navDrawer.width
+        anchors.rightMargin: rtl ? navDrawer.width : 0
         currentIndex: nav.currentIndex
 
         ContainersPage {}

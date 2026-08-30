@@ -102,7 +102,7 @@ Item {
 
                 Label {
                     text: imageDetailPage.tags
-                    font.pixelSize: 20
+                    font.pixelSize: TypeScale.title
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
@@ -137,9 +137,19 @@ Item {
                 }
             }
 
-            Label {
+            RowLayout {
                 visible: apiClient.imageDetailBusy
-                text: qsTr("Loading...")
+                spacing: 8
+
+                BusyIndicator {
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    running: apiClient.imageDetailBusy
+                }
+
+                Label {
+                    text: qsTr("Loading...")
+                }
             }
 
             DetailErrorLabel {
@@ -229,7 +239,7 @@ Item {
                             wrapMode: Text.WrapAnywhere
                             Layout.fillWidth: true
                             font.family: "monospace"
-                            font.pixelSize: 11
+                            font.pixelSize: TypeScale.monospace
                         }
                     }
                 }

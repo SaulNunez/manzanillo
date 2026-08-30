@@ -9,3 +9,5 @@ VolumesPage 1.0 VolumesPage.qml
 VolumeDetailPage 1.0 VolumeDetailPage.qml
 SettingsPage 1.0 SettingsPage.qml
 DetailErrorLabel 1.0 DetailErrorLabel.qml
+singleton Colors 1.0 Colors.qml
+singleton TypeScale 1.0 TypeScale.qml

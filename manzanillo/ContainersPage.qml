@@ -85,7 +85,7 @@ Item {
 
                     Label {
                         text: qsTr("Containers")
-                        font.pixelSize: 20
+                        font.pixelSize: TypeScale.title
                         Layout.fillWidth: true
                     }
 
@@ -99,7 +99,7 @@ Item {
                 Label {
                     id: errorLabel
                     visible: false
-                    color: "red"
+                    color: Colors.error
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                 }
@@ -118,7 +118,7 @@ Item {
 
                 Label {
                     text: qsTr("Search")
-                    font.pixelSize: 12
+                    font.pixelSize: TypeScale.caption
                 }
 
                 TextField {
@@ -202,20 +202,20 @@ Item {
                                         Label {
                                             text: containerRowDelegate.names
                                             font.bold: true
-                                            font.pixelSize: 14
+                                            font.pixelSize: TypeScale.body
                                             Layout.fillWidth: true
                                             elide: Text.ElideRight
                                         }
 
                                         Label {
                                             text: qsTr("Image: %1").arg(containerRowDelegate.image)
-                                            font.pixelSize: 12
+                                            font.pixelSize: TypeScale.caption
                                             opacity: 0.7
                                         }
 
                                         Label {
                                             text: qsTr("Status: %1").arg(containerRowDelegate.status)
-                                            font.pixelSize: 12
+                                            font.pixelSize: TypeScale.caption
                                             opacity: 0.7
                                         }
                                     }
@@ -296,7 +296,7 @@ Item {
                                         Label {
                                             text: projectDelegate.modelData.project
                                             font.bold: true
-                                            font.pixelSize: 16
+                                            font.pixelSize: TypeScale.heading
                                             Layout.fillWidth: true
                                         }
                                     }
@@ -377,18 +377,18 @@ Item {
                                                                     Label {
                                                                         text: containerDelegate.modelData.name
                                                                         font.bold: true
-                                                                        font.pixelSize: 14
+                                                                        font.pixelSize: TypeScale.body
                                                                     }
 
                                                                     Label {
                                                                         text: qsTr("Image: %1").arg(containerDelegate.modelData.image)
-                                                                        font.pixelSize: 12
+                                                                        font.pixelSize: TypeScale.caption
                                                                         opacity: 0.7
                                                                     }
 
                                                                     Label {
                                                                         text: qsTr("Status: %1").arg(containerDelegate.modelData.status)
-                                                                        font.pixelSize: 12
+                                                                        font.pixelSize: TypeScale.caption
                                                                         opacity: 0.7
                                                                     }
                                                                 }

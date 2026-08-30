@@ -171,7 +171,7 @@ Item {
                     wrapMode: TextArea.NoWrap
                     text: apiClient.buildLog
                     font.family: "monospace"
-                    font.pixelSize: 11
+                    font.pixelSize: TypeScale.monospace
                     onTextChanged: cursorPosition = length
                 }
             }
@@ -243,7 +243,7 @@ Item {
 
                     Label {
                         text: qsTr("Images")
-                        font.pixelSize: 20
+                        font.pixelSize: TypeScale.title
                         Layout.fillWidth: true
                     }
 
@@ -269,7 +269,7 @@ Item {
                 Label {
                     id: errorLabel
                     visible: false
-                    color: "red"
+                    color: Colors.error
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                 }
@@ -336,22 +336,22 @@ Item {
                                 Label {
                                     text: imageRowDelegate.tags
                                     font.bold: true
-                                    font.pixelSize: 14
+                                    font.pixelSize: TypeScale.body
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
 
                                 Label {
                                     text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
-                                    font.pixelSize: 12
+                                    font.pixelSize: TypeScale.caption
                                     opacity: 0.7
                                 }
 
                                 Label {
                                     text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                    font.pixelSize: 12
+                                    font.pixelSize: TypeScale.caption
                                     font.italic: true
-                                    color: imageRowDelegate.inUse ? palette.text : "#666666"
+                                    color: imageRowDelegate.inUse ? palette.text : Colors.disabled
                                 }
                             }
 

@@ -5,7 +5,7 @@ import QtQuick.Layouts
 Label {
     id: root
     visible: false
-    color: "red"
+    color: Colors.error
     wrapMode: Text.WordWrap
     Layout.fillWidth: true
 

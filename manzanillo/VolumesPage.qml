@@ -58,7 +58,7 @@ Item {
 
                     Label {
                         text: qsTr("Volumes")
-                        font.pixelSize: 20
+                        font.pixelSize: TypeScale.title
                         Layout.fillWidth: true
                     }
 
@@ -72,7 +72,7 @@ Item {
                 Label {
                     id: errorLabel
                     visible: false
-                    color: "red"
+                    color: Colors.error
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                 }
@@ -139,20 +139,20 @@ Item {
                                 Label {
                                     text: volumeRowDelegate.name
                                     font.bold: true
-                                    font.pixelSize: 14
+                                    font.pixelSize: TypeScale.body
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
 
                                 Label {
                                     text: qsTr("Driver: %1    Created: %2").arg(volumeRowDelegate.driver).arg(volumeRowDelegate.created)
-                                    font.pixelSize: 12
+                                    font.pixelSize: TypeScale.caption
                                     opacity: 0.7
                                 }
 
                                 Label {
                                     text: volumeRowDelegate.mountpoint
-                                    font.pixelSize: 12
+                                    font.pixelSize: TypeScale.caption
                                     opacity: 0.7
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
@@ -160,9 +160,9 @@ Item {
 
                                 Label {
                                     text: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                    font.pixelSize: 12
+                                    font.pixelSize: TypeScale.caption
                                     font.italic: true
-                                    color: volumeRowDelegate.inUse ? palette.text : "#666666"
+                                    color: volumeRowDelegate.inUse ? palette.text : Colors.disabled
                                 }
                             }
 

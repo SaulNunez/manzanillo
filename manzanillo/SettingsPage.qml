@@ -7,11 +7,11 @@ Item {
         target: apiClient
         function onSocketPathChanged(path) { socketField.text = path }
         function onConnectionTestSucceeded(version) {
-            testResultLabel.color = "green"
+            testResultLabel.color = Colors.success
             testResultLabel.text = qsTr("Connected. Docker version: %1").arg(version)
         }
         function onConnectionTestFailed(message) {
-            testResultLabel.color = "red"
+            testResultLabel.color = Colors.error
             testResultLabel.text = qsTr("Connection failed: %1").arg(message)
         }
     }
@@ -23,7 +23,7 @@ Item {
 
         Label {
             text: qsTr("Settings")
-            font.pixelSize: 20
+            font.pixelSize: TypeScale.title
         }
 
         Label {
