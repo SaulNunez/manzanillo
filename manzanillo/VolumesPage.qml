@@ -84,7 +84,7 @@ Item {
 
                         Label {
                             text: qsTr("Volumes")
-                            font.pixelSize: TypeScale.title
+                            font.pointSize: TypeScale.title
                             Layout.fillWidth: true
                         }
 
@@ -133,7 +133,7 @@ Item {
                             anchors.centerIn: parent
                             visible: volumesList.count === 0 && !apiClient.volumesBusy
                             text: qsTr("No volumes found")
-                            font.pixelSize: TypeScale.body
+                            font.pointSize: TypeScale.body
                             opacity: 0.7
                         }
 

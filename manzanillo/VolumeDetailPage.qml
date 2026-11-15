@@ -74,7 +74,7 @@ Item {
 
                 Label {
                     text: volumeDetailPage.volumeName
-                    font.pixelSize: TypeScale.title
+                    font.pointSize: TypeScale.title
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
@@ -119,7 +119,7 @@ Item {
                 objectName: "volumeDetailDeleteReason"
                 visible: volumeDetailPage.inUse
                 text: qsTr("In use by a container — remove the container first")
-                font.pixelSize: TypeScale.caption
+                font.pointSize: TypeScale.caption
                 opacity: 0.7
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignRight
@@ -138,7 +138,7 @@ Item {
 
                 Label {
                     text: qsTr("Loading...")
-                    font.pixelSize: TypeScale.body
+                    font.pointSize: TypeScale.body
                 }
             }
 
@@ -157,33 +157,33 @@ Item {
                     width: detailScrollView.availableWidth
                     spacing: 4
 
-                    Label { text: qsTr("Driver: %1").arg(apiClient.volumeDetail.driver); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Scope: %1").arg(apiClient.volumeDetail.scope); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Created: %1").arg(apiClient.volumeDetail.created); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Mountpoint: %1").arg(apiClient.volumeDetail.mountpoint); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    Label { text: qsTr("Driver: %1").arg(apiClient.volumeDetail.driver); font.pointSize: TypeScale.body }
+                    Label { text: qsTr("Scope: %1").arg(apiClient.volumeDetail.scope); font.pointSize: TypeScale.body }
+                    Label { text: qsTr("Created: %1").arg(apiClient.volumeDetail.created); font.pointSize: TypeScale.body }
+                    Label { text: qsTr("Mountpoint: %1").arg(apiClient.volumeDetail.mountpoint); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
 
                     SectionHeading { text: qsTr("Labels") }
                     Label {
                         visible: !apiClient.volumeDetail.labels || apiClient.volumeDetail.labels.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.volumeDetail.labels || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     }
 
                     SectionHeading { text: qsTr("Options") }
                     Label {
                         visible: !apiClient.volumeDetail.options || apiClient.volumeDetail.options.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.volumeDetail.options || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                     }
                 }
             }

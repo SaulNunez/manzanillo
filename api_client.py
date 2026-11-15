@@ -20,6 +20,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
+from PySide6.QtGui import QFont, QGuiApplication
 
 SETTINGS_ORG = "manzanillo"
 SETTINGS_APP = "manzanillo"
@@ -421,6 +422,7 @@ class ApiClient(QObject):
     connectionTestFailed = Signal(str)
 
     reduceMotionChanged = Signal()
+    systemFontChanged = Signal()
 
     def __init__(self, socket_path: str, base_url: str = "http://localhost", parent=None):
         super().__init__(parent)
@@ -455,6 +457,8 @@ class ApiClient(QObject):
         self._container_detail = {}
         settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self._reduce_motion = settings.value(REDUCE_MOTION_SETTING_KEY, False, type=bool)
+        if QGuiApplication.instance() is not None:
+            QGuiApplication.instance().fontChanged.connect(self._on_system_font_changed)
 
     def _build_client(self, socket_path: str) -> httpx.AsyncClient:
         transport = httpx.AsyncHTTPTransport(uds=socket_path)
@@ -500,6 +504,16 @@ class ApiClient(QObject):
         self._reduce_motion = enabled
         QSettings(SETTINGS_ORG, SETTINGS_APP).setValue(REDUCE_MOTION_SETTING_KEY, enabled)
         self.reduceMotionChanged.emit()
+
+    # The desktop's default font, live. QML's Qt.application.font never notifies,
+    # so TypeScale reads this to rescale the app when the OS font size changes.
+    @Property(QFont, notify=systemFontChanged)
+    def systemFont(self):
+        return QGuiApplication.font()
+
+    @Slot(QFont)
+    def _on_system_font_changed(self, _font):
+        self.systemFontChanged.emit()
 
     @Property(bool, notify=connectionTestBusyChanged)
     def connectionTestBusy(self):

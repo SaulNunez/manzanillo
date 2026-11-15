@@ -44,7 +44,7 @@ Item {
 
                 Label {
                     text: apiClient.containerDetail.name || qsTr("Container")
-                    font.pixelSize: TypeScale.title
+                    font.pointSize: TypeScale.title
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
@@ -69,7 +69,7 @@ Item {
 
                 Label {
                     text: qsTr("Loading...")
-                    font.pixelSize: TypeScale.body
+                    font.pointSize: TypeScale.body
                 }
             }
 
@@ -110,13 +110,13 @@ Item {
                         width: detailScrollView.availableWidth
                         spacing: 4
 
-                        Label { text: qsTr("Id: %1").arg(apiClient.containerDetail.id); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                        Label { text: qsTr("Image: %1").arg(apiClient.containerDetail.image); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        Label { text: qsTr("Id: %1").arg(apiClient.containerDetail.id); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        Label { text: qsTr("Image: %1").arg(apiClient.containerDetail.image); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
 
                         RowLayout {
                             spacing: 8
 
-                            Label { text: qsTr("State:"); font.pixelSize: TypeScale.body }
+                            Label { text: qsTr("State:"); font.pointSize: TypeScale.body }
                             StatusBadge {
                                 objectName: "containerDetailStateBadge"
                                 text: Colors.containerStateLabel(apiClient.containerDetail.state)
@@ -145,58 +145,58 @@ Item {
                             }
                         }
 
-                        Label { text: qsTr("Started: %1").arg(apiClient.containerDetail.startedAt); font.pixelSize: TypeScale.body; visible: !!apiClient.containerDetail.startedAt }
-                        Label { text: qsTr("Created: %1").arg(apiClient.containerDetail.created); font.pixelSize: TypeScale.body }
-                        Label { text: qsTr("Command: %1").arg(apiClient.containerDetail.command); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.containerDetail.command }
-                        Label { text: qsTr("Working Dir: %1").arg(apiClient.containerDetail.workingDir); font.pixelSize: TypeScale.body; visible: !!apiClient.containerDetail.workingDir }
-                        Label { text: qsTr("Restart Policy: %1").arg(apiClient.containerDetail.restartPolicy); font.pixelSize: TypeScale.body; visible: !!apiClient.containerDetail.restartPolicy }
+                        Label { text: qsTr("Started: %1").arg(apiClient.containerDetail.startedAt); font.pointSize: TypeScale.body; visible: !!apiClient.containerDetail.startedAt }
+                        Label { text: qsTr("Created: %1").arg(apiClient.containerDetail.created); font.pointSize: TypeScale.body }
+                        Label { text: qsTr("Command: %1").arg(apiClient.containerDetail.command); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.containerDetail.command }
+                        Label { text: qsTr("Working Dir: %1").arg(apiClient.containerDetail.workingDir); font.pointSize: TypeScale.body; visible: !!apiClient.containerDetail.workingDir }
+                        Label { text: qsTr("Restart Policy: %1").arg(apiClient.containerDetail.restartPolicy); font.pointSize: TypeScale.body; visible: !!apiClient.containerDetail.restartPolicy }
 
                         SectionHeading { text: qsTr("Ports") }
                         Label {
                             visible: !apiClient.containerDetail.ports || apiClient.containerDetail.ports.length === 0
                             text: qsTr("(none)")
-                            font.pixelSize: TypeScale.body
+                            font.pointSize: TypeScale.body
                             opacity: 0.7
                         }
                         Repeater {
                             model: apiClient.containerDetail.ports || []
-                            delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body }
+                            delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body }
                         }
 
                         SectionHeading { text: qsTr("Networks") }
                         Label {
                             visible: !apiClient.containerDetail.networks || apiClient.containerDetail.networks.length === 0
                             text: qsTr("(none)")
-                            font.pixelSize: TypeScale.body
+                            font.pointSize: TypeScale.body
                             opacity: 0.7
                         }
                         Repeater {
                             model: apiClient.containerDetail.networks || []
-                            delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body }
+                            delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body }
                         }
 
                         SectionHeading { text: qsTr("Mounts") }
                         Label {
                             visible: !apiClient.containerDetail.mounts || apiClient.containerDetail.mounts.length === 0
                             text: qsTr("(none)")
-                            font.pixelSize: TypeScale.body
+                            font.pointSize: TypeScale.body
                             opacity: 0.7
                         }
                         Repeater {
                             model: apiClient.containerDetail.mounts || []
-                            delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                            delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                         }
 
                         SectionHeading { text: qsTr("Environment") }
                         Label {
                             visible: !apiClient.containerDetail.env || apiClient.containerDetail.env.length === 0
                             text: qsTr("(none)")
-                            font.pixelSize: TypeScale.body
+                            font.pointSize: TypeScale.body
                             opacity: 0.7
                         }
                         Repeater {
                             model: apiClient.containerDetail.env || []
-                            delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                            delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
                         }
                     }
                 }
@@ -223,7 +223,7 @@ Item {
                         Label {
                             Layout.fillWidth: true
                             text: apiClient.containerLogsStreaming ? qsTr("Streaming logs…") : qsTr("Not streaming")
-                            font.pixelSize: TypeScale.caption
+                            font.pointSize: TypeScale.caption
                             opacity: 0.7
                         }
 
@@ -282,7 +282,7 @@ Item {
                             wrapMode: TextArea.NoWrap
                             text: apiClient.containerLogs
                             font.family: "monospace"
-                            font.pixelSize: TypeScale.monospace
+                            font.pointSize: TypeScale.monospace
                         }
                     }
                 }

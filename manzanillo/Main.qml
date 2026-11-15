@@ -3,7 +3,7 @@ import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 
-Window {
+ApplicationWindow {
     width: 800
     height: 600
     visible: true
@@ -14,6 +14,9 @@ Window {
     // Every Frame/Rectangle in the app that doesn't paint its own opaque
     // background shows this color through, so it has to track the palette too.
     color: palette.window
+    // Controls with no explicit size inherit body text from here, so they too
+    // follow the system font live (see TypeScale).
+    font.pointSize: TypeScale.body
 
     // Read once here rather than via the LayoutMirroring attached property on Drawer/StackLayout
     // below - LayoutMirroring only attaches to Items and Windows, not Popups (Drawer).
