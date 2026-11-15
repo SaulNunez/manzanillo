@@ -3,7 +3,7 @@ import pytest
 from PySide6.QtCore import QObject, QPoint, QPointF, Qt
 from PySide6.QtTest import QTest
 
-from qml_helpers import accessible_name, call_qml, find, find_item, open_detail
+from qml_helpers import accessible_name, call_qml, find, find_item, open_detail, qml_eval
 
 DETAIL_PAGES = [
     # nav index, stack, open function + args, back button
@@ -13,11 +13,20 @@ DETAIL_PAGES = [
 ]
 IDS = ["container", "image", "volume"]
 
-LEFT_ARROW = "←"
-RIGHT_ARROW = "→"
-COLLAPSED_LTR = "▶"
-COLLAPSED_RTL = "◀"
-EXPANDED = "▼"
+# Theme icon names (freedesktop): the arrows follow the layout direction.
+BACK_LTR = "go-previous"
+BACK_RTL = "go-next"
+COLLAPSED_LTR = "go-next"
+COLLAPSED_RTL = "go-previous"
+EXPANDED = "go-down"
+
+
+def icon_name(button):
+    return qml_eval(button, "icon.name")
+
+
+def shows_icon_only(button):
+    return qml_eval(button, "display === AbstractButton.IconOnly")
 
 
 def tooltip_shown_on_hover(main_window, qtbot, item):
@@ -75,7 +84,8 @@ def test_escape_closes_open_dialog_before_leaving_page(main_window, qtbot):
 def test_back_button_has_accessible_name_and_tooltip(main_window, qtbot, nav_index, stack_name, open_function, args, button):
     open_detail(main_window, qtbot, nav_index, stack_name, open_function, args)
     back = find(main_window.window, button)
-    assert back.property("text") == LEFT_ARROW
+    assert icon_name(back) == BACK_LTR
+    assert shows_icon_only(back)
     assert accessible_name(back) == "Back"
     assert tooltip_shown_on_hover(main_window, qtbot, back) == "Back"
 
@@ -83,7 +93,7 @@ def test_back_button_has_accessible_name_and_tooltip(main_window, qtbot, nav_ind
 @pytest.mark.parametrize("nav_index, stack_name, open_function, args, button", DETAIL_PAGES, ids=IDS)
 def test_back_icon_points_right_in_rtl(rtl, main_window, qtbot, nav_index, stack_name, open_function, args, button):
     open_detail(main_window, qtbot, nav_index, stack_name, open_function, args)
-    assert find(main_window.window, button).property("text") == RIGHT_ARROW
+    assert icon_name(find(main_window.window, button)) == BACK_RTL
 
 
 def show_compose(main_window, qtbot):
@@ -100,18 +110,20 @@ def show_compose(main_window, qtbot):
 
 def test_collapsed_arrow_points_forward_in_ltr(main_window, qtbot):
     toggle = show_compose(main_window, qtbot)
-    assert toggle.property("text") == COLLAPSED_LTR
+    assert icon_name(toggle) == COLLAPSED_LTR
+    assert shows_icon_only(toggle)
     containers_page = find(main_window.window, "containerStack").parentItem()
     call_qml(containers_page, "toggleProjectExpanded", "proj")
-    qtbot.waitUntil(lambda: toggle.property("text") == EXPANDED)
+    qtbot.waitUntil(lambda: icon_name(toggle) == EXPANDED)
     service = find_item(main_window.window, "serviceToggle_0")
-    assert service.property("text") == COLLAPSED_LTR
+    assert icon_name(service) == COLLAPSED_LTR
+    assert shows_icon_only(service)
 
 
 def test_collapsed_arrows_point_left_in_rtl(rtl, main_window, qtbot):
     toggle = show_compose(main_window, qtbot)
-    assert toggle.property("text") == COLLAPSED_RTL
+    assert icon_name(toggle) == COLLAPSED_RTL
     containers_page = find(main_window.window, "containerStack").parentItem()
     call_qml(containers_page, "toggleProjectExpanded", "proj")
-    qtbot.waitUntil(lambda: toggle.property("text") == EXPANDED)
-    assert find_item(main_window.window, "serviceToggle_0").property("text") == COLLAPSED_RTL
+    qtbot.waitUntil(lambda: icon_name(toggle) == EXPANDED)
+    assert icon_name(find_item(main_window.window, "serviceToggle_0")) == COLLAPSED_RTL

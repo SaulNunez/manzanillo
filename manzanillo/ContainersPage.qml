@@ -386,7 +386,8 @@ Item {
                                             ToolButton {
                                                 objectName: "projectToggle_" + projectDelegate.index
                                                 focusPolicy: Qt.NoFocus
-                                                text: projectDelegate.expanded ? "▼" : (mirrored ? "◀" : "▶")
+                                                display: AbstractButton.IconOnly
+                                                icon.name: projectDelegate.expanded ? "go-down" : (mirrored ? "go-previous" : "go-next")
                                                 Accessible.name: projectDelegate.expanded
                                                     ? qsTr("Collapse %1").arg(projectDelegate.modelData.project)
                                                     : qsTr("Expand %1").arg(projectDelegate.modelData.project)
@@ -454,7 +455,8 @@ Item {
 
                                                         ToolButton {
                                                             objectName: "serviceToggle_" + serviceDelegate.index
-                                                            text: serviceDelegate.expanded ? "▼" : (mirrored ? "◀" : "▶")
+                                                            display: AbstractButton.IconOnly
+                                                            icon.name: serviceDelegate.expanded ? "go-down" : (mirrored ? "go-previous" : "go-next")
                                                             Accessible.name: serviceDelegate.expanded
                                                                 ? qsTr("Collapse %1").arg(serviceDelegate.modelData.service)
                                                                 : qsTr("Expand %1").arg(serviceDelegate.modelData.service)
