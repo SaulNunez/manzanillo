@@ -104,8 +104,9 @@ Item {
                         }
 
                         ToolButton {
+                            objectName: "refreshContainersButton"
                             icon.name: "view-refresh"
-                            text: apiClient.containersBusy ? qsTr("Loading...") : qsTr("Refresh")
+                            text: qsTr("Refresh")
                             enabled: !apiClient.containersBusy
                             onClicked: apiClient.fetchContainers()
                         }
@@ -171,6 +172,7 @@ Item {
 
                         Item {
                             Label {
+                                objectName: "containersEmptyLabel"
                                 anchors.centerIn: parent
                                 visible: containersList.count === 0 && !apiClient.containersBusy
                                 text: searchField.text.length > 0
@@ -178,6 +180,14 @@ Item {
                                     : qsTr("No containers found")
                                 font.pixelSize: TypeScale.body
                                 opacity: 0.7
+                            }
+
+                            BusyIndicator {
+                                objectName: "containersBusyIndicator"
+                                anchors.centerIn: parent
+                                visible: containersList.count === 0 && apiClient.containersBusy
+                                running: visible
+                                Accessible.name: qsTr("Loading containers")
                             }
 
                             ListView {
@@ -248,7 +258,16 @@ Item {
                                 Accessible.role: Accessible.List
                                 Accessible.name: qsTr("Compose projects")
 
+                                BusyIndicator {
+                                    objectName: "composeBusyIndicator"
+                                    Layout.alignment: Qt.AlignHCenter
+                                    visible: containersPage.filteredComposeProjects.length === 0 && apiClient.containersBusy
+                                    running: visible
+                                    Accessible.name: qsTr("Loading Compose projects")
+                                }
+
                                 Label {
+                                    objectName: "composeEmptyLabel"
                                     visible: containersPage.filteredComposeProjects.length === 0 && !apiClient.containersBusy
                                     text: searchField.text.length > 0
                                         ? qsTr("No Compose containers match \"%1\"").arg(searchField.text)

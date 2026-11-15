@@ -89,8 +89,9 @@ Item {
                         }
 
                         ToolButton {
+                            objectName: "refreshVolumesButton"
                             icon.name: "view-refresh"
-                            text: apiClient.volumesBusy ? qsTr("Loading...") : qsTr("Refresh")
+                            text: qsTr("Refresh")
                             enabled: !apiClient.volumesBusy
                             onClicked: apiClient.fetchVolumes()
                         }
@@ -128,11 +129,20 @@ Item {
                         Layout.fillHeight: true
 
                         Label {
+                            objectName: "volumesEmptyLabel"
                             anchors.centerIn: parent
                             visible: volumesList.count === 0 && !apiClient.volumesBusy
                             text: qsTr("No volumes found")
                             font.pixelSize: TypeScale.body
                             opacity: 0.7
+                        }
+
+                        BusyIndicator {
+                            objectName: "volumesBusyIndicator"
+                            anchors.centerIn: parent
+                            visible: volumesList.count === 0 && apiClient.volumesBusy
+                            running: visible
+                            Accessible.name: qsTr("Loading volumes")
                         }
 
                     ListView {
