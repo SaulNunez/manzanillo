@@ -163,6 +163,7 @@ Item {
                             required property string mountpoint
                             required property string created
                             required property bool inUse
+                            readonly property bool busy: apiClient.busyVolumeNames.indexOf(volumeRowDelegate.name) >= 0
                             objectName: "volumeRow_" + volumeRowDelegate.name
                             width: volumesList.width
                             title: volumeRowDelegate.name
@@ -180,8 +181,8 @@ Item {
 
                             Button {
                                 objectName: "deleteVolumeButton_" + volumeRowDelegate.name
-                                text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                enabled: !apiClient.volumeActionBusy && !volumeRowDelegate.inUse
+                                text: volumeRowDelegate.busy ? qsTr("Working...") : qsTr("Delete")
+                                enabled: !volumeRowDelegate.busy && !volumeRowDelegate.inUse
                                 onClicked: volumesPage.confirmDeleteVolume(volumeRowDelegate.name)
                             }
                         }

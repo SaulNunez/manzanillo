@@ -403,6 +403,7 @@ Item {
                             required property string size
                             required property string created
                             required property bool inUse
+                            readonly property bool busy: apiClient.busyImageIds.indexOf(imageRowDelegate.imageId) >= 0
                             objectName: "imageRow_" + imageRowDelegate.imageId
                             width: imagesList.width
                             title: imageRowDelegate.tags
@@ -421,14 +422,14 @@ Item {
                                 Button {
                                     objectName: "tagImageButton_" + imageRowDelegate.imageId
                                     text: qsTr("Tag")
-                                    enabled: !apiClient.imageActionBusy
+                                    enabled: !imageRowDelegate.busy
                                     onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
                                 }
 
                                 Button {
                                     objectName: "deleteImageButton_" + imageRowDelegate.imageId
-                                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                    enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
+                                    text: imageRowDelegate.busy ? qsTr("Working...") : qsTr("Delete")
+                                    enabled: !imageRowDelegate.busy && !imageRowDelegate.inUse
                                     onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
                                 }
                             }
