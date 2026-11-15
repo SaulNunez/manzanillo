@@ -200,28 +200,87 @@ Item {
                 }
 
                 ColumnLayout {
+                    id: logsPane
                     spacing: 4
 
-                    Label {
-                        text: apiClient.containerLogsStreaming ? qsTr("Following logs…") : qsTr("Not following")
-                        font.pixelSize: TypeScale.caption
-                        opacity: 0.7
+                    // Follow new output only while the user wants it: scrolling up pauses,
+                    // scrolling back to the bottom (or pressing Follow) resumes.
+                    property bool following: true
+                    property bool autoScrolling: false
+
+                    function scrollToEnd() {
+                        logsPane.autoScrolling = true
+                        logsFlickable.contentY = Math.max(0, logsFlickable.contentHeight - logsFlickable.height)
+                        logsPane.autoScrolling = false
                     }
 
-                    ScrollView {
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: apiClient.containerLogsStreaming ? qsTr("Streaming logs…") : qsTr("Not streaming")
+                            font.pixelSize: TypeScale.caption
+                            opacity: 0.7
+                        }
+
+                        Button {
+                            objectName: "logFollowButton"
+                            checkable: true
+                            checked: logsPane.following
+                            text: logsPane.following ? qsTr("Following") : qsTr("Paused")
+                            Accessible.name: logsPane.following ? qsTr("Pause following log output") : qsTr("Follow log output")
+                            onToggled: {
+                                logsPane.following = checked
+                                if (checked)
+                                    logsPane.scrollToEnd()
+                            }
+                        }
+                    }
+
+                    Flickable {
+                        id: logsFlickable
+                        objectName: "containerLogsFlickable"
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        ScrollBar.vertical: ScrollBar {}
+                        ScrollBar.horizontal: ScrollBar {}
+
+                        function atEnd() { return contentY >= contentHeight - height - 2 }
+
+                        onContentYChanged: {
+                            if (!logsPane.autoScrolling)
+                                logsPane.following = atEnd()
+                        }
+                        onContentHeightChanged: {
+                            if (logsPane.following)
+                                logsPane.scrollToEnd()
+                        }
+                        onHeightChanged: {
+                            if (logsPane.following)
+                                logsPane.scrollToEnd()
+                        }
+
+                        // Plain child, not TextArea.flickable: the attached version scrolls to
+                        // keep the cursor visible on every text change, which would fight the
+                        // user's scroll position.
+                        contentWidth: containerLogsArea.width
+                        contentHeight: containerLogsArea.height
 
                         TextArea {
                             id: containerLogsArea
                             objectName: "containerLogsArea"
+                            width: Math.max(implicitWidth, logsFlickable.width)
+                            height: Math.max(implicitHeight, logsFlickable.height)
                             readOnly: true
                             wrapMode: TextArea.NoWrap
                             text: apiClient.containerLogs
                             font.family: "monospace"
                             font.pixelSize: TypeScale.monospace
-                            onTextChanged: cursorPosition = length
                         }
                     }
                 }
