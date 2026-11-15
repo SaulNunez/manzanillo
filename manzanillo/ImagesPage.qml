@@ -59,7 +59,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Overlay.overlay ? Math.min(360, Overlay.overlay.width - 32) : 360
+        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(360, Overlay.overlay.width - 32) : 360
         anchors.centerIn: Overlay.overlay
 
         onAccepted: apiClient.deleteImage(deleteImageDialog.imageId)
@@ -77,7 +77,7 @@ Item {
 
         modal: true
         title: qsTr("Pull image")
-        width: Overlay.overlay ? Math.min(400, Overlay.overlay.width - 32) : 400
+        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(400, Overlay.overlay.width - 32) : 400
         anchors.centerIn: Overlay.overlay
 
         readonly property bool inputValid: pullReferenceField.text.trim().length > 0
@@ -130,7 +130,7 @@ Item {
         // Only a Close button - building doesn't close the dialog, since the log
         // view needs to stay visible while the build streams in.
         standardButtons: Dialog.Close
-        width: Overlay.overlay ? Math.min(480, Overlay.overlay.width - 32) : 480
+        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(480, Overlay.overlay.width - 32) : 480
         anchors.centerIn: Overlay.overlay
 
         contentItem: ColumnLayout {
@@ -218,7 +218,7 @@ Item {
 
         modal: true
         title: qsTr("Add tag")
-        width: Overlay.overlay ? Math.min(400, Overlay.overlay.width - 32) : 400
+        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(400, Overlay.overlay.width - 32) : 400
         anchors.centerIn: Overlay.overlay
 
         readonly property bool inputValid: tagRepositoryField.text.trim().length > 0

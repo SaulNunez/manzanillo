@@ -37,7 +37,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Overlay.overlay ? Math.min(360, Overlay.overlay.width - 32) : 360
+        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(360, Overlay.overlay.width - 32) : 360
         anchors.centerIn: Overlay.overlay
 
         onAccepted: apiClient.deleteVolume(deleteVolumeDialog.volumeName)
