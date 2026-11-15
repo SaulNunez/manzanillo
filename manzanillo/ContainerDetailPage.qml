@@ -37,9 +37,8 @@ Item {
                 anchors.fill: parent
                 spacing: 8
 
-                ToolButton {
+                BackButton {
                     objectName: "containerDetailBackButton"
-                    text: qsTr("< Back")
                     onClicked: containerDetailPage.StackView.view.pop()
                 }
 
