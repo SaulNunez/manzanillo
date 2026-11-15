@@ -142,8 +142,10 @@ Item {
                 }
             }
 
-            DetailErrorLabel {
+            ErrorBanner {
                 id: detailErrorLabel
+                objectName: "volumeDetailErrorBanner"
+                busy: apiClient.volumeDetailBusy || volumeDetailPage.actionBusy
             }
 
             ScrollView {

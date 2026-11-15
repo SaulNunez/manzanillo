@@ -119,23 +119,19 @@ Item {
                     Layout.margins: 12
                     spacing: 8
 
-                    Label {
+                    ErrorBanner {
                         id: errorLabel
-                        visible: false
-                        color: Colors.danger
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        objectName: "containersErrorBanner"
+                        busy: apiClient.containersBusy || apiClient.busyContainerIds.length > 0
                     }
 
                     Connections {
                         target: apiClient
                         function onContainersErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                         function onContainerActionErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                     }
 

@@ -196,8 +196,10 @@ Item {
                 }
             }
 
-            DetailErrorLabel {
+            ErrorBanner {
                 id: detailErrorLabel
+                objectName: "imageDetailErrorBanner"
+                busy: apiClient.imageDetailBusy || imageDetailPage.actionBusy
             }
 
             ScrollView {
