@@ -21,10 +21,9 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: deleteVolumeDialog
         objectName: "volumeDetailDeleteDialog"
-        modal: true
         title: qsTr("Delete volume")
         footer: DialogButtonBox {
             Button {
@@ -39,8 +38,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(360, Overlay.overlay.width - 32) : 360
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 360
 
         // Deleting removes the volume, so there's nothing left to show here - pop
         // back to the list right away instead of waiting to see if it succeeded.

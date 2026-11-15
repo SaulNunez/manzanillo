@@ -20,3 +20,4 @@ PageToolBar 1.0 PageToolBar.qml
 PageStack 1.0 PageStack.qml
 FieldLabel 1.0 FieldLabel.qml
 FieldValue 1.0 FieldValue.qml
+AppDialog 1.0 AppDialog.qml

@@ -22,10 +22,9 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: deleteImageDialog
         objectName: "imageDetailDeleteDialog"
-        modal: true
         title: qsTr("Delete image")
         footer: DialogButtonBox {
             Button {
@@ -40,8 +39,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(360, Overlay.overlay.width - 32) : 360
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 360
 
         // Deleting removes the image, so there's nothing left to show here - pop
         // back to the list right away instead of waiting to see if it succeeded.
@@ -57,13 +55,11 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: tagImageDialog
         objectName: "imageDetailTagDialog"
-        modal: true
         title: qsTr("Add tag")
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(400, Overlay.overlay.width - 32) : 400
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 400
 
         readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
 
