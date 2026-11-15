@@ -1,10 +1,9 @@
 """Back navigation from detail pages: keyboard shortcuts and right-to-left (#11)."""
 import pytest
 from PySide6.QtCore import QObject, QPoint, QPointF, Qt
-from PySide6.QtGui import QAccessible
 from PySide6.QtTest import QTest
 
-from qml_helpers import call_qml, find
+from qml_helpers import accessible_name, call_qml, find, find_item, open_detail
 
 DETAIL_PAGES = [
     # nav index, stack, open function + args, back button
@@ -19,18 +18,6 @@ RIGHT_ARROW = "→"
 COLLAPSED_LTR = "▶"
 COLLAPSED_RTL = "◀"
 EXPANDED = "▼"
-
-
-@pytest.fixture
-def rtl(qapp):
-    """Lay the app out right-to-left, as it would be in an RTL locale."""
-    qapp.setLayoutDirection(Qt.RightToLeft)
-    yield
-    qapp.setLayoutDirection(Qt.LeftToRight)
-
-
-def accessible_name(item):
-    return QAccessible.queryAccessibleInterface(item).text(QAccessible.Name)
 
 
 def tooltip_shown_on_hover(main_window, qtbot, item):
@@ -50,17 +37,6 @@ def tooltip_shown_on_hover(main_window, qtbot, item):
 
     qtbot.waitUntil(visible_tip, timeout=3000)
     return tips[0].property("text")
-
-
-def open_detail(main_window, qtbot, nav_index, stack_name, open_function, args):
-    window = main_window.window
-    find(window, "navList").setProperty("currentIndex", nav_index)
-    stack = find(window, stack_name)
-    call_qml(stack.parentItem(), open_function, *args)
-    qtbot.waitUntil(lambda: stack.property("depth") == 2)
-    window.requestActivate()
-    qtbot.waitUntil(lambda: window.isActive())
-    return stack
 
 
 @pytest.mark.parametrize("nav_index, stack_name, open_function, args, button", DETAIL_PAGES, ids=IDS)
@@ -108,17 +84,6 @@ def test_back_button_has_accessible_name_and_tooltip(main_window, qtbot, nav_ind
 def test_back_icon_points_right_in_rtl(rtl, main_window, qtbot, nav_index, stack_name, open_function, args, button):
     open_detail(main_window, qtbot, nav_index, stack_name, open_function, args)
     assert find(main_window.window, button).property("text") == RIGHT_ARROW
-
-
-def find_item(window, object_name):
-    """Like ``find`` but walks the visual item tree, which reaches Repeater delegates."""
-    pending = [window.contentItem()]
-    while pending:
-        item = pending.pop()
-        if item.objectName() == object_name:
-            return item
-        pending.extend(item.childItems())
-    raise AssertionError(f"no QML item with objectName {object_name!r}")
 
 
 def show_compose(main_window, qtbot):

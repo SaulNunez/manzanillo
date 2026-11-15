@@ -8,8 +8,7 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
-from qml_helpers import call_qml, find
-from test_search_nav_motion import qml_eval
+from qml_helpers import call_qml, find, qml_eval
 
 CONTAINER_ID = "a" * 64
 IMAGE_ID = "sha256:" + "b" * 64

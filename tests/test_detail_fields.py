@@ -6,8 +6,7 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtTest import QTest
 
-from qml_helpers import REPO_ROOT, find
-from test_back_navigation import open_detail
+from qml_helpers import REPO_ROOT, find, find_item, open_detail, scene_x, settle
 
 CONTAINER = {
     "id": "f" * 64, "name": "web", "image": "nginx:latest", "state": "running",
@@ -27,12 +26,6 @@ VOLUME = {
 }
 
 
-def settle(stack, qtbot):
-    """Wait for the push transition and layout to finish so items are where they'll stay."""
-    qtbot.waitUntil(lambda: not stack.property("busy"))
-    qtbot.wait(50)
-
-
 def open_container(main_window, qtbot):
     main_window.fake.set("containerDetail", CONTAINER)
     settle(open_detail(main_window, qtbot, 0, "containerStack", "openContainerDetail", [CONTAINER["id"]]), qtbot)
@@ -46,17 +39,6 @@ def open_image(main_window, qtbot):
 def open_volume(main_window, qtbot):
     main_window.fake.set("volumeDetail", VOLUME)
     settle(open_detail(main_window, qtbot, 2, "volumeStack", "openVolumeDetail", ["data", False]), qtbot)
-
-
-def find_visual(root, object_name):
-    """Find an item by objectName among visual children (reaches Repeater delegates)."""
-    pending = [root.contentItem()]
-    while pending:
-        item = pending.pop()
-        if item.objectName() == object_name:
-            return item
-        pending.extend(item.childItems())
-    raise AssertionError(f"no visual item with objectName {object_name!r}")
 
 
 def value_text(field):
@@ -95,7 +77,7 @@ def keyboard_copy(window, text_item, qtbot):
 
 def test_environment_variable_can_be_selected_and_copied_with_the_keyboard(main_window, qtbot, clipboard):
     open_container(main_window, qtbot)
-    field = find_visual(main_window.window, "containerEnvValue_1")  # keep the wrapper alive
+    field = find_item(main_window.window, "containerEnvValue_1")  # keep the wrapper alive
     env = value_text(field)
     assert env.property("activeFocusOnTab")
     keyboard_copy(main_window.window, env, qtbot)
@@ -117,7 +99,7 @@ def test_mountpoint_can_be_selected_with_the_mouse(main_window, qtbot):
 
 def test_copy_button_copies_image_digest(main_window, qtbot, clipboard):
     open_image(main_window, qtbot)
-    field = find_visual(main_window.window, "imageDigestValue_0")
+    field = find_item(main_window.window, "imageDigestValue_0")
     click(main_window.window, find(field, "copyButton"))
     qtbot.waitUntil(lambda: clipboard.text() == IMAGE["digests"][0])
 
@@ -127,10 +109,6 @@ def test_copy_button_copies_image_id(main_window, qtbot, clipboard):
     field = find(main_window.window, "imageDetailIdValue")
     click(main_window.window, find(field, "copyButton"))
     qtbot.waitUntil(lambda: clipboard.text() == IMAGE["id"])
-
-
-def scene_x(item):
-    return round(item.mapToScene(QPointF(0, 0)).x())
 
 
 ALIGNED_FIELDS = [
@@ -152,13 +130,13 @@ def test_fields_are_laid_out_in_aligned_label_and_value_columns(main_window, qtb
     grid = find(main_window.window, grid_name)
     fields = [find(grid, name) for name in value_names]
     # Every value starts at the same x, right of a label column that starts at the grid's edge.
-    value_xs = {scene_x(field) for field in fields}
+    value_xs = {round(scene_x(field)) for field in fields}
     assert len(value_xs) == 1, value_xs
     labels = [item for item in grid.childItems()
               if item.isVisible() and item not in fields and item.property("text")
               and item.metaObject().className().startswith("FieldLabel")]
     assert len(labels) >= len(fields)
-    assert {scene_x(label) for label in labels} == {scene_x(grid)}
+    assert {round(scene_x(label)) for label in labels} == {round(scene_x(grid))}
     assert value_xs.pop() > scene_x(grid) + max(label.width() for label in labels)
     # Labels are caption-sized, values body-sized.
     caption = labels[0].property("font").pointSizeF()

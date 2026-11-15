@@ -7,9 +7,8 @@ Headings use DemiBold; row titles use Medium.
 """
 import pytest
 from PySide6.QtGui import QFont, QGuiApplication
-from PySide6.QtQml import QQmlEngine, QQmlExpression
 
-from qml_helpers import find, find_item
+from qml_helpers import find, find_item, qml_eval
 
 LARGE = 14.0  # a "Large" desktop font setting, in points
 
@@ -100,17 +99,6 @@ def test_changing_the_system_font_rescales_all_text(system_font, load_qml, qtbot
         after = item.property("font").pointSizeF()
         assert after == pytest.approx(size * 2), (
             f"{item.property('text')!r} did not follow the system font ({size} -> {after})")
-
-
-def qml_eval(item, expression):
-    """Evaluate ``expression`` in ``item``'s scope (enum properties aren't readable from Python)."""
-    context = None
-    owner = item
-    while context is None and owner is not None:  # control internals have no context of their own
-        context = QQmlEngine.contextForObject(owner)
-        owner = owner.parent()
-    value, _ = QQmlExpression(context, item, expression).evaluate()
-    return value
 
 
 def clipped_text(window):

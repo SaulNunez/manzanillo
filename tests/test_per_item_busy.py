@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 from api_client import ApiClient
-from qml_helpers import call_qml, find, find_item
+from qml_helpers import call_qml, find, find_item, show_page
 
 CONTAINER_A = "a" * 64
 CONTAINER_B = "b" * 64
@@ -68,11 +68,6 @@ IMAGE_A, IMAGE_B = "sha256:" + "a" * 8, "sha256:" + "b" * 8
 def button_state(window, object_name):
     button = find_item(window, object_name)
     return button.property("text"), button.property("enabled")
-
-
-def show_page(main_window, qtbot, index):
-    find(main_window.window, "navList").setProperty("currentIndex", index)
-    qtbot.wait(10)
 
 
 def test_container_rows_show_working_only_on_the_busy_container(main_window, qtbot):

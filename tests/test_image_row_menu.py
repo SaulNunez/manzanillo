@@ -4,9 +4,8 @@ Opening the image is the row's primary action; Tag and Delete live in one
 keyboard-reachable, named menu button instead of two stacked buttons.
 """
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAccessible
 
-from qml_helpers import find, find_item
+from qml_helpers import accessible_name, find, find_item, visible_texts
 
 IMAGE_ID = "sha256:abc"
 REASON = "In use by a container — remove the container first"
@@ -18,26 +17,6 @@ def show_images(main_window, qtbot, containers=0):
     find(main_window.window, "navList").setProperty("currentIndex", 1)
     qtbot.wait(10)
     return find_item(main_window.window, "imageRow_" + IMAGE_ID)
-
-
-def accessible_name(item):
-    iface = QAccessible.queryAccessibleInterface(item)
-    assert iface is not None
-    return iface.text(QAccessible.Text.Name)
-
-
-def visible_texts(item):
-    texts = []
-    pending = [item]
-    while pending:
-        obj = pending.pop()
-        if not obj.property("visible"):
-            continue
-        text = obj.property("text")
-        if isinstance(text, str) and obj.metaObject().indexOfProperty("font") >= 0:
-            texts.append(text)
-        pending.extend(obj.childItems())
-    return texts
 
 
 def menu_of(main_window):

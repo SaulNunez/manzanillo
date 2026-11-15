@@ -4,37 +4,10 @@ Images and volumes that are in use can't be deleted. The reason is shown as a
 visible caption (no hover needed, so keyboard users see it) and is exposed to
 screen readers both on the row and on the disabled Delete button itself.
 """
-from PySide6.QtGui import QAccessible
 
-from qml_helpers import call_qml, find, find_item
+from qml_helpers import accessible_description, call_qml, find, find_item, show_page, visible_texts
 
 REASON = "In use by a container — remove the container first"
-
-
-def accessible_description(item):
-    iface = QAccessible.queryAccessibleInterface(item)
-    assert iface is not None
-    return iface.text(QAccessible.Text.Description)
-
-
-def show_page(main_window, qtbot, index):
-    find(main_window.window, "navList").setProperty("currentIndex", index)
-    qtbot.wait(10)
-
-
-def visible_texts(item):
-    """Texts of all visible text items under ``item`` (as a sighted user sees them)."""
-    texts = []
-    pending = [item]
-    while pending:
-        obj = pending.pop()
-        if not obj.property("visible"):
-            continue
-        text = obj.property("text")
-        if isinstance(text, str) and obj.metaObject().indexOfProperty("font") >= 0:
-            texts.append(text)
-        pending.extend(obj.childItems())
-    return texts
 
 
 def show_images(main_window, qtbot, containers):
