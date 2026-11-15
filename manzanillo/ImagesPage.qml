@@ -383,6 +383,8 @@ Item {
                         spacing: 4
                         model: apiClient.imagesModel
                         activeFocusOnTab: true
+                        Accessible.role: Accessible.List
+                        Accessible.name: qsTr("Images")
 
                         // Keyboard equivalent of tapping a row: arrow keys move currentIndex
                         // (built into ListView), Enter/Return/Space opens its detail page.
@@ -393,7 +395,7 @@ Item {
                             }
                         }
 
-                        delegate: Frame {
+                        delegate: RowCard {
                             id: imageRowDelegate
                             required property int index
                             required property string imageId
@@ -401,78 +403,33 @@ Item {
                             required property string size
                             required property string created
                             required property bool inUse
+                            objectName: "imageRow_" + imageRowDelegate.imageId
                             width: imagesList.width
-                            // Frame only derives its implicit size automatically from a single
-                            // content child; the focus-ring Rectangle below makes that two, so
-                            // size it explicitly off the RowLayout instead.
-                            implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
-
-                            RowLayout {
-                                id: contentRow
-                                anchors.fill: parent
-                                spacing: 8
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 8
-
-                                        Label {
-                                            text: imageRowDelegate.tags
-                                            font.bold: true
-                                            font.pixelSize: TypeScale.body
-                                            Layout.fillWidth: true
-                                            elide: Text.ElideRight
-                                        }
-
-                                        StatusBadge {
-                                            text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                            tint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
-                                        }
-                                    }
-
-                                    Label {
-                                        text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
-                                        font.pixelSize: TypeScale.caption
-                                        opacity: 0.7
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    spacing: 4
-
-                                    Button {
-                                        objectName: "tagImageButton_" + imageRowDelegate.imageId
-                                        text: qsTr("Tag")
-                                        enabled: !apiClient.imageActionBusy
-                                        onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
-                                    }
-
-                                    Button {
-                                        objectName: "deleteImageButton_" + imageRowDelegate.imageId
-                                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                        enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
-                                        onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
-                                    }
-                                }
+                            title: imageRowDelegate.tags
+                            statusText: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                            statusTint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
+                            details: [qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)]
+                            showFocusRing: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
+                            onActivated: {
+                                imagesList.currentIndex = imageRowDelegate.index
+                                imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags, imageRowDelegate.inUse)
                             }
 
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                border.color: palette.highlight
-                                border.width: 2
-                                visible: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
-                            }
+                            ColumnLayout {
+                                spacing: 4
 
-                            TapHandler {
-                                cursorShape: Qt.PointingHandCursor
-                                onTapped: {
-                                    imagesList.currentIndex = imageRowDelegate.index
-                                    imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags, imageRowDelegate.inUse)
+                                Button {
+                                    objectName: "tagImageButton_" + imageRowDelegate.imageId
+                                    text: qsTr("Tag")
+                                    enabled: !apiClient.imageActionBusy
+                                    onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
+                                }
+
+                                Button {
+                                    objectName: "deleteImageButton_" + imageRowDelegate.imageId
+                                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
+                                    enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
+                                    onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
                                 }
                             }
                         }

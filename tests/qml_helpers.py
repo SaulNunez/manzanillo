@@ -9,6 +9,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Q_ARG, Q_RETURN_ARG, QMetaObject, QObject, QtMsgType
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuick import QQuickItem, QQuickWindow
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -33,6 +34,23 @@ def call_qml(obj, function_name, *args):
         *[Q_ARG("QVariant", a) for a in args],
     )
     return result
+
+
+def find_item(root, object_name):
+    """Like ``find``, but also reaches view delegates (ListView/Repeater rows).
+
+    Delegates are only parented visually (``parentItem``), so ``findChild`` misses
+    them; this walks QObject children and visual child items alike.
+    """
+    pending = [root.contentItem() if isinstance(root, QQuickWindow) else root]
+    while pending:
+        obj = pending.pop()
+        if obj.objectName() == object_name:
+            return obj
+        pending.extend(obj.children())
+        if isinstance(obj, QQuickItem):
+            pending.extend(obj.childItems())
+    raise AssertionError(f"no QML item with objectName {object_name!r}")
 
 
 @dataclass
