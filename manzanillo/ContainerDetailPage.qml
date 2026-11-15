@@ -73,8 +73,10 @@ Item {
                 }
             }
 
-            DetailErrorLabel {
+            ErrorBanner {
                 id: detailErrorLabel
+                objectName: "containerDetailErrorBanner"
+                busy: apiClient.containerDetailBusy || containerDetailPage.actionBusy || apiClient.containerLogsStreaming
             }
 
             TabBar {
