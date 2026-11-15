@@ -12,7 +12,7 @@ Frame {
 
     property string title: ""
     property string statusText: ""
-    property color statusTint: Colors.disabled
+    property color statusTint: Colors.neutral
     // Caption lines shown under the title, one string per line.
     property var details: []
     // When the focus ring shows. Defaults to the row's own keyboard focus; rows
@@ -62,6 +62,7 @@ Frame {
                 }
 
                 StatusBadge {
+                    objectName: "statusBadge"
                     visible: rowCard.statusText.length > 0
                     text: rowCard.statusText
                     tint: rowCard.statusTint

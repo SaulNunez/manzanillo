@@ -117,8 +117,9 @@ Item {
 
                             Label { text: qsTr("State:"); font.pixelSize: TypeScale.body }
                             StatusBadge {
-                                text: apiClient.containerDetail.state || ""
-                                tint: apiClient.containerDetail.state === "running" ? Colors.success : Colors.disabled
+                                objectName: "containerDetailStateBadge"
+                                text: Colors.containerStateLabel(apiClient.containerDetail.state)
+                                tint: Colors.containerStateTint(apiClient.containerDetail.state)
                             }
                         }
 

@@ -121,7 +121,7 @@ Item {
                     Label {
                         id: errorLabel
                         visible: false
-                        color: Colors.error
+                        color: Colors.danger
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
@@ -211,8 +211,8 @@ Item {
                                     objectName: "containerRow_" + containerRowDelegate.containerId
                                     width: containersList.width
                                     title: containerRowDelegate.names
-                                    statusText: containerRowDelegate.state
-                                    statusTint: containerRowDelegate.state === "running" ? Colors.success : Colors.disabled
+                                    statusText: Colors.containerStateLabel(containerRowDelegate.state)
+                                    statusTint: Colors.containerStateTint(containerRowDelegate.state)
                                     details: [
                                         qsTr("Image: %1").arg(containerRowDelegate.image),
                                         qsTr("Status: %1").arg(containerRowDelegate.status)
@@ -345,8 +345,8 @@ Item {
                                                                 Layout.fillWidth: true
                                                                 activeFocusOnTab: true
                                                                 title: containerDelegate.modelData.name
-                                                                statusText: containerDelegate.modelData.state
-                                                                statusTint: containerDelegate.modelData.state === "running" ? Colors.success : Colors.disabled
+                                                                statusText: Colors.containerStateLabel(containerDelegate.modelData.state)
+                                                                statusTint: Colors.containerStateTint(containerDelegate.modelData.state)
                                                                 details: [
                                                                     qsTr("Image: %1").arg(containerDelegate.modelData.image),
                                                                     qsTr("Status: %1").arg(containerDelegate.modelData.status)

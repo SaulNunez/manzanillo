@@ -28,7 +28,7 @@ Item {
             Button {
                 objectName: "volumeDetailDeleteDialogConfirmButton"
                 text: qsTr("Delete")
-                palette.buttonText: Colors.error
+                palette.buttonText: Colors.danger
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             Button {
@@ -94,7 +94,7 @@ Item {
 
                 StatusBadge {
                     text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                    tint: volumeDetailPage.inUse ? Colors.success : Colors.disabled
+                    tint: volumeDetailPage.inUse ? Colors.success : Colors.neutral
                 }
 
                 Item {
@@ -105,7 +105,7 @@ Item {
                     objectName: "volumeDetailDeleteButton"
                     text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
                     enabled: !apiClient.volumeActionBusy && !volumeDetailPage.inUse
-                    palette.buttonText: Colors.error
+                    palette.buttonText: Colors.danger
                     onClicked: deleteVolumeDialog.open()
                 }
             }

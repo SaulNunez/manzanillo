@@ -28,7 +28,7 @@ Item {
             Button {
                 objectName: "deleteVolumeDialogConfirmButton"
                 text: qsTr("Delete")
-                palette.buttonText: Colors.error
+                palette.buttonText: Colors.danger
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             Button {
@@ -106,7 +106,7 @@ Item {
                     Label {
                         id: errorLabel
                         visible: false
-                        color: Colors.error
+                        color: Colors.danger
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
@@ -167,7 +167,7 @@ Item {
                             width: volumesList.width
                             title: volumeRowDelegate.name
                             statusText: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                            statusTint: volumeRowDelegate.inUse ? Colors.success : Colors.disabled
+                            statusTint: volumeRowDelegate.inUse ? Colors.success : Colors.neutral
                             details: [
                                 qsTr("Driver: %1    Created: %2").arg(volumeRowDelegate.driver).arg(volumeRowDelegate.created),
                                 volumeRowDelegate.mountpoint
