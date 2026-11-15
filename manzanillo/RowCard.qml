@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// A clickable list row: bold title, status badge, caption metadata lines and
+// A clickable list row: medium-weight title, status badge, caption metadata lines and
 // trailing actions, with a focus ring. Tapping it, pressing Enter/Return/Space
 // while it has focus, or the accessibility "press" action emits activated().
 //
@@ -55,8 +55,8 @@ Frame {
 
                 Label {
                     text: rowCard.title
-                    font.bold: true
-                    font.pixelSize: TypeScale.body
+                    font.weight: Font.Medium
+                    font.pointSize: TypeScale.body
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
@@ -75,7 +75,7 @@ Frame {
                 delegate: Label {
                     required property string modelData
                     text: modelData
-                    font.pixelSize: TypeScale.caption
+                    font.pointSize: TypeScale.caption
                     opacity: 0.7
                     Layout.fillWidth: true
                     elide: Text.ElideRight

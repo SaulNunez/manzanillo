@@ -10,7 +10,7 @@ ToolButton {
     id: backButton
 
     text: backButton.mirrored ? "→" : "←"
-    font.pixelSize: TypeScale.title
+    font.pointSize: TypeScale.title
     Accessible.name: qsTr("Back")
     ToolTip.visible: hovered
     ToolTip.text: Accessible.name

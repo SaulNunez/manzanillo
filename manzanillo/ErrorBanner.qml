@@ -56,7 +56,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: "!"
                 color: palette.window
-                font.pixelSize: TypeScale.caption
+                font.pointSize: TypeScale.caption
                 font.weight: Font.Bold
             }
         }
@@ -65,7 +65,7 @@ Rectangle {
             objectName: "errorBannerText"
             text: root.text
             wrapMode: Text.WordWrap
-            font.pixelSize: TypeScale.body
+            font.pointSize: TypeScale.body
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
         }

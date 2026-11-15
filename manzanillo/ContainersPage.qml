@@ -171,7 +171,7 @@ Item {
                                 text: searchField.text.length > 0
                                     ? qsTr("No containers match \"%1\"").arg(searchField.text)
                                     : qsTr("No containers found")
-                                font.pixelSize: TypeScale.body
+                                font.pointSize: TypeScale.body
                                 opacity: 0.7
                             }
 
@@ -266,7 +266,7 @@ Item {
                                     text: searchField.text.length > 0
                                         ? qsTr("No Compose containers match \"%1\"").arg(searchField.text)
                                         : qsTr("No Compose projects found")
-                                    font.pixelSize: TypeScale.body
+                                    font.pointSize: TypeScale.body
                                     opacity: 0.7
                                 }
 
@@ -298,8 +298,8 @@ Item {
 
                                             Label {
                                                 text: projectDelegate.modelData.project
-                                                font.bold: true
-                                                font.pixelSize: TypeScale.heading
+                                                font.weight: Font.DemiBold
+                                                font.pointSize: TypeScale.heading
                                                 Layout.fillWidth: true
                                             }
                                         }

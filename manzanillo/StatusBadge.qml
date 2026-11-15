@@ -20,7 +20,7 @@ Rectangle {
         id: label
         anchors.centerIn: parent
         color: tint
-        font.pixelSize: TypeScale.caption
+        font.pointSize: TypeScale.caption
         font.weight: Font.DemiBold
     }
 }

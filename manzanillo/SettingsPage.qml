@@ -47,7 +47,7 @@ Item {
 
             Label {
                 text: qsTr("Docker socket path")
-                font.bold: true
+                font.weight: Font.DemiBold
             }
 
             RowLayout {
@@ -102,7 +102,7 @@ Item {
 
             Label {
                 text: qsTr("Accessibility")
-                font.bold: true
+                font.weight: Font.DemiBold
                 Layout.topMargin: 12
             }
 
@@ -116,7 +116,7 @@ Item {
 
             Label {
                 text: qsTr("Switch pages instantly instead of sliding them in and out.")
-                font.pixelSize: TypeScale.caption
+                font.pointSize: TypeScale.caption
                 opacity: 0.7
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true

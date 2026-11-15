@@ -61,7 +61,7 @@ FlatToolBar {
             id: titleLabel
             objectName: "pageToolBarTitle"
             text: toolBar.title
-            font.pixelSize: TypeScale.title
+            font.pointSize: TypeScale.title
             elide: Text.ElideRight
             Layout.fillWidth: true
             Layout.minimumWidth: 0

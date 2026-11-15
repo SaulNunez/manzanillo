@@ -15,6 +15,7 @@ enforces that), but:
   ``fake.containersErrorOccurred.emit("boom")`` to simulate a failure.
 """
 from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtGui import QFont, QGuiApplication
 
 from api_client import (
     ContainerFilterProxyModel,
@@ -74,6 +75,7 @@ class FakeApiClient(QObject):
     connectionTestFailed = Signal(str)
 
     reduceMotionChanged = Signal()
+    systemFontChanged = Signal()
 
     # --- state properties: name -> (Qt type, notify signal, default) ---
     _STATE = {
@@ -111,6 +113,8 @@ class FakeApiClient(QObject):
         self.filtered_containers_model.setSourceModel(self.containers_model)
         self.images_model = ImageListModel(self)
         self.volumes_model = VolumeListModel(self)
+        if QGuiApplication.instance() is not None:
+            QGuiApplication.instance().fontChanged.connect(self._on_system_font_changed)
 
     def set(self, name, value):
         """Set a state property from a test and emit its notify signal."""
@@ -123,6 +127,16 @@ class FakeApiClient(QObject):
 
     def _record(self, name, *args):
         self.calls.append((name, *args))
+
+    # Like ApiClient, follows the application font live: simulate an OS font-size
+    # change with QGuiApplication.setFont(...).
+    @Property(QFont, notify=systemFontChanged)
+    def systemFont(self):
+        return QGuiApplication.font()
+
+    @Slot(QFont)
+    def _on_system_font_changed(self, _font):
+        self.systemFontChanged.emit()
 
     # --- list models (constant, as in ApiClient) ---
     @Property(QObject, constant=True)

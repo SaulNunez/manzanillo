@@ -186,7 +186,7 @@ Item {
 
             Label {
                 text: qsTr("Build Log")
-                font.bold: true
+                font.weight: Font.DemiBold
                 Layout.topMargin: 4
                 visible: buildLogArea.text.length > 0
             }
@@ -204,7 +204,7 @@ Item {
                     wrapMode: TextArea.NoWrap
                     text: apiClient.buildLog
                     font.family: "monospace"
-                    font.pixelSize: TypeScale.monospace
+                    font.pointSize: TypeScale.monospace
                     onTextChanged: cursorPosition = length
                 }
             }
@@ -352,7 +352,7 @@ Item {
                             anchors.centerIn: parent
                             visible: imagesList.count === 0 && !apiClient.imagesBusy
                             text: qsTr("No images found")
-                            font.pixelSize: TypeScale.body
+                            font.pointSize: TypeScale.body
                             opacity: 0.7
                         }
 
@@ -474,7 +474,7 @@ Item {
                                             width: parent.width
                                             text: imageRowDelegate.deleteDisabledReason
                                             wrapMode: Text.WordWrap
-                                            font.pixelSize: TypeScale.caption
+                                            font.pointSize: TypeScale.caption
                                             opacity: 0.7
                                             leftPadding: 12
                                             rightPadding: 12
