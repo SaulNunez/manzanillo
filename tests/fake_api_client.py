@@ -39,7 +39,7 @@ class FakeApiClient(QObject):
     containerDetailBusyChanged = Signal()
     containerDetailErrorOccurred = Signal(str)
 
-    containerActionBusyChanged = Signal()
+    busyContainerIdsChanged = Signal()
     containerActionErrorOccurred = Signal(str)
 
     containerLogsChanged = Signal()
@@ -54,6 +54,7 @@ class FakeApiClient(QObject):
     imageDetailErrorOccurred = Signal(str)
 
     imageActionBusyChanged = Signal()
+    busyImageIdsChanged = Signal()
     imageActionErrorOccurred = Signal(str)
     buildLogChanged = Signal()
 
@@ -64,7 +65,7 @@ class FakeApiClient(QObject):
     volumeDetailBusyChanged = Signal()
     volumeDetailErrorOccurred = Signal(str)
 
-    volumeActionBusyChanged = Signal()
+    busyVolumeNamesChanged = Signal()
     volumeActionErrorOccurred = Signal(str)
 
     socketPathChanged = Signal(str)
@@ -72,26 +73,30 @@ class FakeApiClient(QObject):
     connectionTestSucceeded = Signal(str)
     connectionTestFailed = Signal(str)
 
+    reduceMotionChanged = Signal()
+
     # --- state properties: name -> (Qt type, notify signal, default) ---
     _STATE = {
         "socketPath": (str, socketPathChanged, "/var/run/docker.sock"),
         "connectionTestBusy": (bool, connectionTestBusyChanged, False),
+        "reduceMotion": (bool, reduceMotionChanged, False),
         "containersBusy": (bool, containersBusyChanged, False),
         "imagesBusy": (bool, imagesBusyChanged, False),
         "volumesBusy": (bool, volumesBusyChanged, False),
         "composeProjects": ("QVariant", composeProjectsChanged, []),
         "containerDetail": ("QVariant", containerDetailChanged, {}),
         "containerDetailBusy": (bool, containerDetailBusyChanged, False),
-        "containerActionBusy": (bool, containerActionBusyChanged, False),
+        "busyContainerIds": ("QVariant", busyContainerIdsChanged, []),
         "containerLogs": (str, containerLogsChanged, ""),
         "containerLogsStreaming": (bool, containerLogsStreamingChanged, False),
         "imageDetail": ("QVariant", imageDetailChanged, {}),
         "imageDetailBusy": (bool, imageDetailBusyChanged, False),
         "imageActionBusy": (bool, imageActionBusyChanged, False),
+        "busyImageIds": ("QVariant", busyImageIdsChanged, []),
         "buildLog": (str, buildLogChanged, ""),
         "volumeDetail": ("QVariant", volumeDetailChanged, {}),
         "volumeDetailBusy": (bool, volumeDetailBusyChanged, False),
-        "volumeActionBusy": (bool, volumeActionBusyChanged, False),
+        "busyVolumeNames": ("QVariant", busyVolumeNamesChanged, []),
     }
     for _name, (_type, _notify, _default) in _STATE.items():
         locals()[_name] = _state(_name, _type, _notify)
@@ -140,6 +145,10 @@ class FakeApiClient(QObject):
     @Slot(str)
     def setSocketPath(self, path):
         self._record("setSocketPath", path)
+
+    @Slot(bool)
+    def setReduceMotion(self, enabled):
+        self._record("setReduceMotion", enabled)
 
     @Slot()
     def testConnection(self):
