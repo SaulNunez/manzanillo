@@ -53,6 +53,9 @@ Window {
         edge: rtl ? Qt.RightEdge : Qt.LeftEdge
         modal: narrow
         interactive: narrow
+        // Persistent (wide) mode never closes. Not closing on Esc there also stops
+        // the drawer from blocking window shortcuts such as BackButton's Esc/Alt+Left.
+        closePolicy: narrow ? Popup.CloseOnEscape | Popup.CloseOnPressOutside : Popup.NoAutoClose
 
         Component.onCompleted: if (!narrow) open()
 
