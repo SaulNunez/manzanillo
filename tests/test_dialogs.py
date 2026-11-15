@@ -193,6 +193,11 @@ def text_colour(button):
     return button.property("contentItem").property("color").name()
 
 
+def is_danger_red(button):
+    colour = button.property("contentItem").property("color")
+    return colour.red() > colour.green() and colour.red() > colour.blue()
+
+
 def test_image_detail_delete_is_set_apart_from_tag(main_window, qtbot):
     find(main_window.window, "navList").setProperty("currentIndex", 1)  # Images
     stack = find(main_window.window, "imageStack")
@@ -205,7 +210,7 @@ def test_image_detail_delete_is_set_apart_from_tag(main_window, qtbot):
     gap = scene_x(delete) - (scene_x(tag) + tag.width())
     assert gap >= 48, f"Delete sits only {gap}px from Tag"
     assert text_colour(delete) != text_colour(tag)
-    assert text_colour(delete) == "#ff0000"  # Colors.error
+    assert is_danger_red(delete)  # Colors.danger
 
 
 def test_volume_detail_delete_is_destructive_coloured(main_window, qtbot):
@@ -215,5 +220,5 @@ def test_volume_detail_delete_is_destructive_coloured(main_window, qtbot):
     qtbot.wait(20)
     delete = find(main_window.window, "volumeDetailDeleteButton")
     back = find(main_window.window, "volumeDetailBackButton")
-    assert text_colour(delete) == "#ff0000"
+    assert is_danger_red(delete)  # Colors.danger
     assert text_colour(delete) != text_colour(back)

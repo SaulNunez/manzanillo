@@ -50,7 +50,7 @@ Item {
             Button {
                 objectName: "deleteImageDialogConfirmButton"
                 text: qsTr("Delete")
-                palette.buttonText: Colors.error
+                palette.buttonText: Colors.danger
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             Button {
@@ -349,7 +349,7 @@ Item {
                     Label {
                         id: errorLabel
                         visible: false
-                        color: Colors.error
+                        color: Colors.danger
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
@@ -420,7 +420,7 @@ Item {
                             width: imagesList.width
                             title: imageRowDelegate.tags
                             statusText: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                            statusTint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
+                            statusTint: imageRowDelegate.inUse ? Colors.success : Colors.neutral
                             // Delete is disabled while the image is in use; say why in a
                             // visible caption (disabled buttons get no hover or focus).
                             readonly property string deleteDisabledReason: imageRowDelegate.inUse

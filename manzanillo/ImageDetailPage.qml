@@ -31,7 +31,7 @@ Item {
             Button {
                 objectName: "imageDetailDeleteDialogConfirmButton"
                 text: qsTr("Delete")
-                palette.buttonText: Colors.error
+                palette.buttonText: Colors.danger
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             Button {
@@ -175,7 +175,7 @@ Item {
                 Button {
                     objectName: "imageDetailDeleteButton"
                     text: imageDetailPage.actionBusy ? qsTr("Working...") : qsTr("Delete")
-                    palette.buttonText: Colors.error
+                    palette.buttonText: Colors.danger
                     enabled: !imageDetailPage.actionBusy
                     onClicked: deleteImageDialog.open()
                 }
@@ -220,7 +220,7 @@ Item {
                         Label { text: qsTr("Status:"); font.pixelSize: TypeScale.body }
                         StatusBadge {
                             text: imageDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                            tint: imageDetailPage.inUse ? Colors.success : Colors.disabled
+                            tint: imageDetailPage.inUse ? Colors.success : Colors.neutral
                         }
                     }
 

@@ -7,7 +7,7 @@ import QtQuick.Controls
 Rectangle {
     id: root
     property alias text: label.text
-    property color tint: Colors.disabled
+    property color tint: Colors.neutral
 
     implicitWidth: label.implicitWidth + 16
     implicitHeight: label.implicitHeight + 6
