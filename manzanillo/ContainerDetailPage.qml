@@ -112,46 +112,92 @@ Item {
                         width: detailScrollView.availableWidth
                         spacing: 4
 
-                        Label { text: qsTr("Id: %1").arg(apiClient.containerDetail.id); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
-                        Label { text: qsTr("Image: %1").arg(apiClient.containerDetail.image); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        // Label column (caption) and value column (body), so values line
+                        // up and translations don't carry "Key: %1" layout.
+                        GridLayout {
+                            objectName: "containerDetailFields"
+                            Layout.fillWidth: true
+                            columns: 2
+                            columnSpacing: 16
+                            rowSpacing: 6
 
-                        RowLayout {
-                            spacing: 8
+                            FieldLabel { text: qsTr("ID") }
+                            FieldValue {
+                                objectName: "containerDetailIdValue"
+                                text: apiClient.containerDetail.id || ""
+                                copyable: true
+                                copyName: qsTr("container ID")
+                            }
 
-                            Label { text: qsTr("State:"); font.pointSize: TypeScale.body }
+                            FieldLabel { text: qsTr("Image") }
+                            FieldValue {
+                                objectName: "containerDetailImageValue"
+                                text: apiClient.containerDetail.image || ""
+                            }
+
+                            FieldLabel { text: qsTr("State"); Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft; Layout.topMargin: 0 }
                             StatusBadge {
                                 objectName: "containerDetailStateBadge"
                                 text: Colors.containerStateLabel(apiClient.containerDetail.state)
                                 tint: Colors.containerStateTint(apiClient.containerDetail.state)
                             }
-                        }
 
-                        RowLayout {
-                            spacing: 8
-                            Layout.topMargin: 4
+                            // Actions sit under the state, in the value column.
+                            Item { implicitWidth: 1; implicitHeight: 1 }
+                            RowLayout {
+                                spacing: 8
 
-                            Button {
-                                objectName: "startContainerButton"
-                                text: containerDetailPage.actionBusy ? qsTr("Working...") : qsTr("Start")
-                                visible: apiClient.containerDetail.state !== "running"
-                                enabled: !containerDetailPage.actionBusy && !apiClient.containerDetailBusy
-                                onClicked: apiClient.startContainer(apiClient.containerDetail.id)
+                                Button {
+                                    objectName: "startContainerButton"
+                                    text: containerDetailPage.actionBusy ? qsTr("Working...") : qsTr("Start")
+                                    visible: apiClient.containerDetail.state !== "running"
+                                    enabled: !containerDetailPage.actionBusy && !apiClient.containerDetailBusy
+                                    onClicked: apiClient.startContainer(apiClient.containerDetail.id)
+                                }
+
+                                Button {
+                                    objectName: "stopContainerButton"
+                                    text: containerDetailPage.actionBusy ? qsTr("Working...") : qsTr("Stop")
+                                    visible: apiClient.containerDetail.state === "running"
+                                    enabled: !containerDetailPage.actionBusy && !apiClient.containerDetailBusy
+                                    onClicked: apiClient.stopContainer(apiClient.containerDetail.id)
+                                }
                             }
 
-                            Button {
-                                objectName: "stopContainerButton"
-                                text: containerDetailPage.actionBusy ? qsTr("Working...") : qsTr("Stop")
-                                visible: apiClient.containerDetail.state === "running"
-                                enabled: !containerDetailPage.actionBusy && !apiClient.containerDetailBusy
-                                onClicked: apiClient.stopContainer(apiClient.containerDetail.id)
+                            FieldLabel { text: qsTr("Started"); visible: !!apiClient.containerDetail.startedAt }
+                            FieldValue {
+                                objectName: "containerDetailStartedValue"
+                                text: apiClient.containerDetail.startedAt || ""
+                                visible: !!apiClient.containerDetail.startedAt
+                            }
+
+                            FieldLabel { text: qsTr("Created") }
+                            FieldValue {
+                                objectName: "containerDetailCreatedValue"
+                                text: apiClient.containerDetail.created || ""
+                            }
+
+                            FieldLabel { text: qsTr("Command"); visible: !!apiClient.containerDetail.command }
+                            FieldValue {
+                                objectName: "containerDetailCommandValue"
+                                text: apiClient.containerDetail.command || ""
+                                visible: !!apiClient.containerDetail.command
+                            }
+
+                            FieldLabel { text: qsTr("Working directory"); visible: !!apiClient.containerDetail.workingDir }
+                            FieldValue {
+                                objectName: "containerDetailWorkingDirValue"
+                                text: apiClient.containerDetail.workingDir || ""
+                                visible: !!apiClient.containerDetail.workingDir
+                            }
+
+                            FieldLabel { text: qsTr("Restart policy"); visible: !!apiClient.containerDetail.restartPolicy }
+                            FieldValue {
+                                objectName: "containerDetailRestartPolicyValue"
+                                text: apiClient.containerDetail.restartPolicy || ""
+                                visible: !!apiClient.containerDetail.restartPolicy
                             }
                         }
-
-                        Label { text: qsTr("Started: %1").arg(apiClient.containerDetail.startedAt); font.pointSize: TypeScale.body; visible: !!apiClient.containerDetail.startedAt }
-                        Label { text: qsTr("Created: %1").arg(apiClient.containerDetail.created); font.pointSize: TypeScale.body }
-                        Label { text: qsTr("Command: %1").arg(apiClient.containerDetail.command); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.containerDetail.command }
-                        Label { text: qsTr("Working Dir: %1").arg(apiClient.containerDetail.workingDir); font.pointSize: TypeScale.body; visible: !!apiClient.containerDetail.workingDir }
-                        Label { text: qsTr("Restart Policy: %1").arg(apiClient.containerDetail.restartPolicy); font.pointSize: TypeScale.body; visible: !!apiClient.containerDetail.restartPolicy }
 
                         SectionHeading { text: qsTr("Ports") }
                         Label {
@@ -162,7 +208,7 @@ Item {
                         }
                         Repeater {
                             model: apiClient.containerDetail.ports || []
-                            delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body }
+                            delegate: FieldValue { required property string modelData; text: modelData }
                         }
 
                         SectionHeading { text: qsTr("Networks") }
@@ -174,7 +220,7 @@ Item {
                         }
                         Repeater {
                             model: apiClient.containerDetail.networks || []
-                            delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body }
+                            delegate: FieldValue { required property string modelData; text: modelData }
                         }
 
                         SectionHeading { text: qsTr("Mounts") }
@@ -186,7 +232,7 @@ Item {
                         }
                         Repeater {
                             model: apiClient.containerDetail.mounts || []
-                            delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                            delegate: FieldValue { required property string modelData; required property int index; objectName: "containerMountValue_" + index; text: modelData }
                         }
 
                         SectionHeading { text: qsTr("Environment") }
@@ -198,7 +244,7 @@ Item {
                         }
                         Repeater {
                             model: apiClient.containerDetail.env || []
-                            delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                            delegate: FieldValue { required property string modelData; required property int index; objectName: "containerEnvValue_" + index; text: modelData }
                         }
                     }
                 }

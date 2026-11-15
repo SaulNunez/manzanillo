@@ -18,3 +18,5 @@ singleton TypeScale 1.0 TypeScale.qml
 RowCard 1.0 RowCard.qml
 PageToolBar 1.0 PageToolBar.qml
 PageStack 1.0 PageStack.qml
+FieldLabel 1.0 FieldLabel.qml
+FieldValue 1.0 FieldValue.qml
