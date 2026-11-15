@@ -115,6 +115,28 @@ Item {
                 Layout.fillWidth: true
             }
 
+            Label {
+                text: qsTr("Accessibility")
+                font.bold: true
+                Layout.topMargin: 12
+            }
+
+            Switch {
+                id: reduceMotionSwitch
+                objectName: "reduceMotionSwitch"
+                text: qsTr("Reduce motion")
+                checked: apiClient.reduceMotion
+                onToggled: apiClient.setReduceMotion(checked)
+            }
+
+            Label {
+                text: qsTr("Switch pages instantly instead of sliding them in and out.")
+                font.pixelSize: TypeScale.caption
+                opacity: 0.7
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
             Item { Layout.fillHeight: true }
         }
     }

@@ -73,10 +73,13 @@ class FakeApiClient(QObject):
     connectionTestSucceeded = Signal(str)
     connectionTestFailed = Signal(str)
 
+    reduceMotionChanged = Signal()
+
     # --- state properties: name -> (Qt type, notify signal, default) ---
     _STATE = {
         "socketPath": (str, socketPathChanged, "/var/run/docker.sock"),
         "connectionTestBusy": (bool, connectionTestBusyChanged, False),
+        "reduceMotion": (bool, reduceMotionChanged, False),
         "containersBusy": (bool, containersBusyChanged, False),
         "imagesBusy": (bool, imagesBusyChanged, False),
         "volumesBusy": (bool, volumesBusyChanged, False),
@@ -142,6 +145,10 @@ class FakeApiClient(QObject):
     @Slot(str)
     def setSocketPath(self, path):
         self._record("setSocketPath", path)
+
+    @Slot(bool)
+    def setReduceMotion(self, enabled):
+        self._record("setReduceMotion", enabled)
 
     @Slot()
     def testConnection(self):
