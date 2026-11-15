@@ -6,6 +6,9 @@ import QtQuick.Layouts
 Item {
     // True between clicking Save and the client confirming the new path.
     property bool savePending: false
+    // Whether the last connection test failed; drives the result label's colour
+    // as a binding so it follows a live light/dark switch.
+    property bool connectionTestFailed: false
 
     Connections {
         target: apiClient
@@ -17,11 +20,11 @@ Item {
             }
         }
         function onConnectionTestSucceeded(version) {
-            testResultLabel.color = Colors.success
+            connectionTestFailed = false
             testResultLabel.text = qsTr("Connected. Docker version: %1").arg(version)
         }
         function onConnectionTestFailed(message) {
-            testResultLabel.color = Colors.error
+            connectionTestFailed = true
             testResultLabel.text = qsTr("Connection failed: %1").arg(message)
         }
     }
@@ -92,6 +95,29 @@ Item {
             Label {
                 id: testResultLabel
                 objectName: "testResultLabel"
+                color: connectionTestFailed ? Colors.danger : Colors.success
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            Label {
+                text: qsTr("Accessibility")
+                font.bold: true
+                Layout.topMargin: 12
+            }
+
+            Switch {
+                id: reduceMotionSwitch
+                objectName: "reduceMotionSwitch"
+                text: qsTr("Reduce motion")
+                checked: apiClient.reduceMotion
+                onToggled: apiClient.setReduceMotion(checked)
+            }
+
+            Label {
+                text: qsTr("Switch pages instantly instead of sliding them in and out.")
+                font.pixelSize: TypeScale.caption
+                opacity: 0.7
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }

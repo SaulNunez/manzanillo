@@ -28,7 +28,7 @@ Item {
             Button {
                 objectName: "deleteVolumeDialogConfirmButton"
                 text: qsTr("Delete")
-                palette.buttonText: Colors.error
+                palette.buttonText: Colors.danger
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             Button {
@@ -37,7 +37,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Math.min(360, Overlay.overlay.width - 32)
+        width: Overlay.overlay ? Math.min(360, Overlay.overlay.width - 32) : 360
         anchors.centerIn: Overlay.overlay
 
         onAccepted: apiClient.deleteVolume(deleteVolumeDialog.volumeName)
@@ -49,7 +49,7 @@ Item {
         }
     }
 
-    StackView {
+    PageStack {
         id: volumeStack
         objectName: "volumeStack"
         anchors.fill: parent
@@ -88,7 +88,7 @@ Item {
                     Label {
                         id: errorLabel
                         visible: false
-                        color: Colors.error
+                        color: Colors.danger
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
@@ -154,11 +154,12 @@ Item {
                             required property string mountpoint
                             required property string created
                             required property bool inUse
+                            readonly property bool busy: apiClient.busyVolumeNames.indexOf(volumeRowDelegate.name) >= 0
                             objectName: "volumeRow_" + volumeRowDelegate.name
                             width: volumesList.width
                             title: volumeRowDelegate.name
                             statusText: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                            statusTint: volumeRowDelegate.inUse ? Colors.success : Colors.disabled
+                            statusTint: volumeRowDelegate.inUse ? Colors.success : Colors.neutral
                             // Delete is disabled while the volume is in use; say why in a
                             // visible caption (disabled buttons get no hover or focus).
                             readonly property string deleteDisabledReason: volumeRowDelegate.inUse
@@ -176,8 +177,8 @@ Item {
                             Button {
                                 objectName: "deleteVolumeButton_" + volumeRowDelegate.name
                                 Accessible.description: volumeRowDelegate.deleteDisabledReason
-                                text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                enabled: !apiClient.volumeActionBusy && !volumeRowDelegate.inUse
+                                text: volumeRowDelegate.busy ? qsTr("Working...") : qsTr("Delete")
+                                enabled: !volumeRowDelegate.busy && !volumeRowDelegate.inUse
                                 onClicked: volumesPage.confirmDeleteVolume(volumeRowDelegate.name)
                             }
                         }

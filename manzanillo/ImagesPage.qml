@@ -50,7 +50,7 @@ Item {
             Button {
                 objectName: "deleteImageDialogConfirmButton"
                 text: qsTr("Delete")
-                palette.buttonText: Colors.error
+                palette.buttonText: Colors.danger
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             Button {
@@ -59,7 +59,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Math.min(360, Overlay.overlay.width - 32)
+        width: Overlay.overlay ? Math.min(360, Overlay.overlay.width - 32) : 360
         anchors.centerIn: Overlay.overlay
 
         onAccepted: apiClient.deleteImage(deleteImageDialog.imageId)
@@ -77,7 +77,7 @@ Item {
 
         modal: true
         title: qsTr("Pull image")
-        width: Math.min(400, Overlay.overlay.width - 32)
+        width: Overlay.overlay ? Math.min(400, Overlay.overlay.width - 32) : 400
         anchors.centerIn: Overlay.overlay
 
         readonly property bool inputValid: pullReferenceField.text.trim().length > 0
@@ -130,7 +130,7 @@ Item {
         // Only a Close button - building doesn't close the dialog, since the log
         // view needs to stay visible while the build streams in.
         standardButtons: Dialog.Close
-        width: Math.min(480, Overlay.overlay.width - 32)
+        width: Overlay.overlay ? Math.min(480, Overlay.overlay.width - 32) : 480
         anchors.centerIn: Overlay.overlay
 
         contentItem: ColumnLayout {
@@ -218,7 +218,7 @@ Item {
 
         modal: true
         title: qsTr("Add tag")
-        width: Math.min(400, Overlay.overlay.width - 32)
+        width: Overlay.overlay ? Math.min(400, Overlay.overlay.width - 32) : 400
         anchors.centerIn: Overlay.overlay
 
         readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
@@ -275,7 +275,7 @@ Item {
         }
     }
 
-    StackView {
+    PageStack {
         id: imageStack
         objectName: "imageStack"
         anchors.fill: parent
@@ -330,7 +330,7 @@ Item {
                     Label {
                         id: errorLabel
                         visible: false
-                        color: Colors.error
+                        color: Colors.danger
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
@@ -396,11 +396,12 @@ Item {
                             required property string size
                             required property string created
                             required property bool inUse
+                            readonly property bool busy: apiClient.busyImageIds.indexOf(imageRowDelegate.imageId) >= 0
                             objectName: "imageRow_" + imageRowDelegate.imageId
                             width: imagesList.width
                             title: imageRowDelegate.tags
                             statusText: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                            statusTint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
+                            statusTint: imageRowDelegate.inUse ? Colors.success : Colors.neutral
                             // Delete is disabled while the image is in use; say why in a
                             // visible caption (disabled buttons get no hover or focus).
                             readonly property string deleteDisabledReason: imageRowDelegate.inUse
@@ -419,15 +420,15 @@ Item {
                                 Button {
                                     objectName: "tagImageButton_" + imageRowDelegate.imageId
                                     text: qsTr("Tag")
-                                    enabled: !apiClient.imageActionBusy
+                                    enabled: !imageRowDelegate.busy
                                     onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
                                 }
 
                                 Button {
                                     objectName: "deleteImageButton_" + imageRowDelegate.imageId
                                     Accessible.description: imageRowDelegate.deleteDisabledReason
-                                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                    enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
+                                    text: imageRowDelegate.busy ? qsTr("Working...") : qsTr("Delete")
+                                    enabled: !imageRowDelegate.busy && !imageRowDelegate.inUse
                                     onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
                                 }
                             }

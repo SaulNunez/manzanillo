@@ -5,6 +5,8 @@ import QtQuick.Layouts
 Item {
     id: volumeDetailPage
     required property string volumeName
+    // Busy only while this volume's own delete is in flight.
+    readonly property bool actionBusy: apiClient.busyVolumeNames.indexOf(volumeDetailPage.volumeName) >= 0
     required property bool inUse
 
     Component.onCompleted: apiClient.fetchVolumeDetail(volumeDetailPage.volumeName)
@@ -28,7 +30,7 @@ Item {
             Button {
                 objectName: "volumeDetailDeleteDialogConfirmButton"
                 text: qsTr("Delete")
-                palette.buttonText: Colors.error
+                palette.buttonText: Colors.danger
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             Button {
@@ -37,7 +39,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Math.min(360, Overlay.overlay.width - 32)
+        width: Overlay.overlay ? Math.min(360, Overlay.overlay.width - 32) : 360
         anchors.centerIn: Overlay.overlay
 
         // Deleting removes the volume, so there's nothing left to show here - pop
@@ -65,9 +67,8 @@ Item {
                 anchors.fill: parent
                 spacing: 8
 
-                ToolButton {
+                BackButton {
                     objectName: "volumeDetailBackButton"
-                    text: qsTr("< Back")
                     onClicked: volumeDetailPage.StackView.view.pop()
                 }
 
@@ -94,7 +95,7 @@ Item {
 
                 StatusBadge {
                     text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                    tint: volumeDetailPage.inUse ? Colors.success : Colors.disabled
+                    tint: volumeDetailPage.inUse ? Colors.success : Colors.neutral
                 }
 
                 Item {
@@ -104,9 +105,9 @@ Item {
                 Button {
                     objectName: "volumeDetailDeleteButton"
                     Accessible.description: deleteReasonLabel.visible ? deleteReasonLabel.text : ""
-                    text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
-                    enabled: !apiClient.volumeActionBusy && !volumeDetailPage.inUse
-                    palette.buttonText: Colors.error
+                    text: volumeDetailPage.actionBusy ? qsTr("Working...") : qsTr("Delete")
+                    enabled: !volumeDetailPage.actionBusy && !volumeDetailPage.inUse
+                    palette.buttonText: Colors.danger
                     onClicked: deleteVolumeDialog.open()
                 }
             }

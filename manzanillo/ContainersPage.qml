@@ -64,7 +64,7 @@ Item {
         return projects
     }
 
-    StackView {
+    PageStack {
         id: containerStack
         objectName: "containerStack"
         anchors.fill: parent
@@ -103,7 +103,7 @@ Item {
                     Label {
                         id: errorLabel
                         visible: false
-                        color: Colors.error
+                        color: Colors.danger
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
@@ -120,17 +120,33 @@ Item {
                         }
                     }
 
-                    Label {
-                        text: qsTr("Search")
-                        font.pixelSize: TypeScale.caption
+                    // Ctrl+F (platform Find) jumps to search, but only while this list is
+                    // what's on screen - not from another nav page or a pushed detail page.
+                    Shortcut {
+                        sequences: [StandardKey.Find]
+                        enabled: searchField.visible
+                        onActivated: {
+                            searchField.forceActiveFocus(Qt.ShortcutFocusReason)
+                            searchField.selectAll()
+                        }
                     }
 
                     TextField {
                         id: searchField
                         objectName: "containerSearchField"
                         Layout.fillWidth: true
-                        placeholderText: qsTr("Search containers by name or image…")
+                        placeholderText: qsTr("Search containers by name or image… (Ctrl+F)")
                         Accessible.name: qsTr("Search containers by name or image")
+                        // Esc clears a non-empty query; when already empty the key is left
+                        // unaccepted so window-level Esc handling still sees it.
+                        Keys.onEscapePressed: (event) => {
+                            if (text.length > 0) {
+                                clear()
+                                event.accepted = true
+                            } else {
+                                event.accepted = false
+                            }
+                        }
                         onTextChanged: {
                             apiClient.filteredContainersModel.setFilterText(text)
                             containersPage.searchText = text
@@ -199,11 +215,12 @@ Item {
                                     required property string image
                                     required property string status
                                     required property string state
+                                    readonly property bool busy: apiClient.busyContainerIds.indexOf(containerRowDelegate.containerId) >= 0
                                     objectName: "containerRow_" + containerRowDelegate.containerId
                                     width: containersList.width
                                     title: containerRowDelegate.names
-                                    statusText: containerRowDelegate.state
-                                    statusTint: containerRowDelegate.state === "running" ? Colors.success : Colors.disabled
+                                    statusText: Colors.containerStateLabel(containerRowDelegate.state)
+                                    statusTint: Colors.containerStateTint(containerRowDelegate.state)
                                     details: [
                                         qsTr("Image: %1").arg(containerRowDelegate.image),
                                         qsTr("Status: %1").arg(containerRowDelegate.status)
@@ -216,10 +233,10 @@ Item {
 
                                     Button {
                                         objectName: "quickActionButton_" + containerRowDelegate.containerId
-                                        text: apiClient.containerActionBusy
+                                        text: containerRowDelegate.busy
                                             ? qsTr("Working...")
                                             : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                        enabled: !apiClient.containerActionBusy
+                                        enabled: !containerRowDelegate.busy
                                         onClicked: containerRowDelegate.state === "running"
                                             ? apiClient.stopContainer(containerRowDelegate.containerId)
                                             : apiClient.startContainer(containerRowDelegate.containerId)
@@ -274,7 +291,7 @@ Item {
 
                                             ToolButton {
                                                 objectName: "projectToggle_" + projectDelegate.index
-                                                text: projectDelegate.expanded ? "▼" : "▶"
+                                                text: projectDelegate.expanded ? "▼" : (mirrored ? "◀" : "▶")
                                                 Accessible.name: projectDelegate.expanded
                                                     ? qsTr("Collapse %1").arg(projectDelegate.modelData.project)
                                                     : qsTr("Expand %1").arg(projectDelegate.modelData.project)
@@ -314,7 +331,7 @@ Item {
 
                                                         ToolButton {
                                                             objectName: "serviceToggle_" + serviceDelegate.index
-                                                            text: serviceDelegate.expanded ? "▼" : "▶"
+                                                            text: serviceDelegate.expanded ? "▼" : (mirrored ? "◀" : "▶")
                                                             Accessible.name: serviceDelegate.expanded
                                                                 ? qsTr("Collapse %1").arg(serviceDelegate.modelData.service)
                                                                 : qsTr("Expand %1").arg(serviceDelegate.modelData.service)
@@ -341,12 +358,13 @@ Item {
                                                             delegate: RowCard {
                                                                 id: containerDelegate
                                                                 required property var modelData
+                                                                readonly property bool busy: apiClient.busyContainerIds.indexOf(containerDelegate.modelData.id) >= 0
                                                                 objectName: "composeContainerRow_" + containerDelegate.modelData.id
                                                                 Layout.fillWidth: true
                                                                 activeFocusOnTab: true
                                                                 title: containerDelegate.modelData.name
-                                                                statusText: containerDelegate.modelData.state
-                                                                statusTint: containerDelegate.modelData.state === "running" ? Colors.success : Colors.disabled
+                                                                statusText: Colors.containerStateLabel(containerDelegate.modelData.state)
+                                                                statusTint: Colors.containerStateTint(containerDelegate.modelData.state)
                                                                 details: [
                                                                     qsTr("Image: %1").arg(containerDelegate.modelData.image),
                                                                     qsTr("Status: %1").arg(containerDelegate.modelData.status)
@@ -355,10 +373,10 @@ Item {
 
                                                                 Button {
                                                                     objectName: "quickActionButton_" + containerDelegate.modelData.id
-                                                                    text: apiClient.containerActionBusy
+                                                                    text: containerDelegate.busy
                                                                         ? qsTr("Working...")
                                                                         : (containerDelegate.modelData.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                                                    enabled: !apiClient.containerActionBusy
+                                                                    enabled: !containerDelegate.busy
                                                                     onClicked: containerDelegate.modelData.state === "running"
                                                                         ? apiClient.stopContainer(containerDelegate.modelData.id)
                                                                         : apiClient.startContainer(containerDelegate.modelData.id)

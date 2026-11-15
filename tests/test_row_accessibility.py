@@ -54,7 +54,7 @@ def test_container_row_is_announced_and_opens_detail(main_window, qtbot):
     iface = accessible(row)
     assert iface.role() == QAccessible.Role.Button
     name = iface.text(QAccessible.Text.Name)
-    assert "web" in name and "running" in name
+    assert "web" in name and "Running" in name
 
     press(row)
     stack = find(main_window.window, "containerStack")
@@ -80,7 +80,7 @@ def test_compose_container_card_is_announced_and_opens_detail(main_window, qtbot
     iface = accessible(row)
     assert iface.role() == QAccessible.Role.Button
     name = iface.text(QAccessible.Text.Name)
-    assert "shop-db-1" in name and "exited" in name
+    assert "shop-db-1" in name and "Exited" in name
 
     press(row)
     stack = find(main_window.window, "containerStack")

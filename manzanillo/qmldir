@@ -12,7 +12,9 @@ DetailErrorLabel 1.0 DetailErrorLabel.qml
 StatusBadge 1.0 StatusBadge.qml
 SectionHeading 1.0 SectionHeading.qml
 FlatToolBar 1.0 FlatToolBar.qml
+BackButton 1.0 BackButton.qml
 singleton Colors 1.0 Colors.qml
 singleton TypeScale 1.0 TypeScale.qml
 RowCard 1.0 RowCard.qml
 PageToolBar 1.0 PageToolBar.qml
+PageStack 1.0 PageStack.qml

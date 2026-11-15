@@ -5,6 +5,8 @@ import QtQuick.Layouts
 Item {
     id: imageDetailPage
     required property string imageId
+    // Busy only while this image's own delete/tag is in flight.
+    readonly property bool actionBusy: apiClient.busyImageIds.indexOf(imageDetailPage.imageId) >= 0
     required property string tags
     required property bool inUse
 
@@ -29,7 +31,7 @@ Item {
             Button {
                 objectName: "imageDetailDeleteDialogConfirmButton"
                 text: qsTr("Delete")
-                palette.buttonText: Colors.error
+                palette.buttonText: Colors.danger
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             Button {
@@ -38,7 +40,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Math.min(360, Overlay.overlay.width - 32)
+        width: Overlay.overlay ? Math.min(360, Overlay.overlay.width - 32) : 360
         anchors.centerIn: Overlay.overlay
 
         // Deleting removes the image, so there's nothing left to show here - pop
@@ -60,7 +62,7 @@ Item {
         objectName: "imageDetailTagDialog"
         modal: true
         title: qsTr("Add tag")
-        width: Math.min(400, Overlay.overlay.width - 32)
+        width: Overlay.overlay ? Math.min(400, Overlay.overlay.width - 32) : 400
         anchors.centerIn: Overlay.overlay
 
         readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
@@ -128,9 +130,8 @@ Item {
                 anchors.fill: parent
                 spacing: 8
 
-                ToolButton {
+                BackButton {
                     objectName: "imageDetailBackButton"
-                    text: qsTr("< Back")
                     onClicked: imageDetailPage.StackView.view.pop()
                 }
 
@@ -158,7 +159,7 @@ Item {
                 Button {
                     objectName: "imageDetailTagButton"
                     text: qsTr("Tag")
-                    enabled: !apiClient.imageActionBusy
+                    enabled: !imageDetailPage.actionBusy
                     onClicked: {
                         tagRepositoryField.text = ""
                         tagTagField.text = ""
@@ -172,9 +173,9 @@ Item {
 
                 Button {
                     objectName: "imageDetailDeleteButton"
-                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                    palette.buttonText: Colors.error
-                    enabled: !apiClient.imageActionBusy
+                    text: imageDetailPage.actionBusy ? qsTr("Working...") : qsTr("Delete")
+                    palette.buttonText: Colors.danger
+                    enabled: !imageDetailPage.actionBusy
                     onClicked: deleteImageDialog.open()
                 }
             }
@@ -218,7 +219,7 @@ Item {
                         Label { text: qsTr("Status:"); font.pixelSize: TypeScale.body }
                         StatusBadge {
                             text: imageDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                            tint: imageDetailPage.inUse ? Colors.success : Colors.disabled
+                            tint: imageDetailPage.inUse ? Colors.success : Colors.neutral
                         }
                     }
 
