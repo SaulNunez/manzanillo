@@ -275,7 +275,7 @@ Item {
         }
     }
 
-    StackView {
+    PageStack {
         id: imageStack
         objectName: "imageStack"
         anchors.fill: parent
@@ -315,22 +315,25 @@ Item {
                         }
 
                         ToolButton {
+                            objectName: "pullImageToolButton"
                             icon.name: "download"
-                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
+                            text: qsTr("Pull Image")
                             enabled: !apiClient.imageActionBusy
                             onClicked: imagesPage.openPullImageDialog()
                         }
 
                         ToolButton {
+                            objectName: "buildImageToolButton"
                             icon.name: "run-build"
-                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
+                            text: qsTr("Build Image")
                             enabled: !apiClient.imageActionBusy
                             onClicked: imagesPage.openBuildImageDialog()
                         }
 
                         ToolButton {
+                            objectName: "refreshImagesButton"
                             icon.name: "view-refresh"
-                            text: apiClient.imagesBusy ? qsTr("Loading...") : qsTr("Refresh")
+                            text: qsTr("Refresh")
                             enabled: !apiClient.imagesBusy
                             onClicked: apiClient.fetchImages()
                         }
@@ -368,11 +371,20 @@ Item {
                         Layout.fillHeight: true
 
                         Label {
+                            objectName: "imagesEmptyLabel"
                             anchors.centerIn: parent
                             visible: imagesList.count === 0 && !apiClient.imagesBusy
                             text: qsTr("No images found")
                             font.pixelSize: TypeScale.body
                             opacity: 0.7
+                        }
+
+                        BusyIndicator {
+                            objectName: "imagesBusyIndicator"
+                            anchors.centerIn: parent
+                            visible: imagesList.count === 0 && apiClient.imagesBusy
+                            running: visible
+                            Accessible.name: qsTr("Loading images")
                         }
 
                         ListView {
@@ -383,6 +395,8 @@ Item {
                         spacing: 4
                         model: apiClient.imagesModel
                         activeFocusOnTab: true
+                        Accessible.role: Accessible.List
+                        Accessible.name: qsTr("Images")
 
                         // Keyboard equivalent of tapping a row: arrow keys move currentIndex
                         // (built into ListView), Enter/Return/Space opens its detail page.
@@ -393,7 +407,7 @@ Item {
                             }
                         }
 
-                        delegate: Frame {
+                        delegate: RowCard {
                             id: imageRowDelegate
                             required property int index
                             required property string imageId
@@ -401,78 +415,40 @@ Item {
                             required property string size
                             required property string created
                             required property bool inUse
+                            readonly property bool busy: apiClient.busyImageIds.indexOf(imageRowDelegate.imageId) >= 0
+                            objectName: "imageRow_" + imageRowDelegate.imageId
                             width: imagesList.width
-                            // Frame only derives its implicit size automatically from a single
-                            // content child; the focus-ring Rectangle below makes that two, so
-                            // size it explicitly off the RowLayout instead.
-                            implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
-
-                            RowLayout {
-                                id: contentRow
-                                anchors.fill: parent
-                                spacing: 8
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 8
-
-                                        Label {
-                                            text: imageRowDelegate.tags
-                                            font.bold: true
-                                            font.pixelSize: TypeScale.body
-                                            Layout.fillWidth: true
-                                            elide: Text.ElideRight
-                                        }
-
-                                        StatusBadge {
-                                            text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                            tint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
-                                        }
-                                    }
-
-                                    Label {
-                                        text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
-                                        font.pixelSize: TypeScale.caption
-                                        opacity: 0.7
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    spacing: 4
-
-                                    Button {
-                                        objectName: "tagImageButton_" + imageRowDelegate.imageId
-                                        text: qsTr("Tag")
-                                        enabled: !apiClient.imageActionBusy
-                                        onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
-                                    }
-
-                                    Button {
-                                        objectName: "deleteImageButton_" + imageRowDelegate.imageId
-                                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                        enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
-                                        onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
-                                    }
-                                }
+                            title: imageRowDelegate.tags
+                            statusText: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                            statusTint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
+                            // Delete is disabled while the image is in use; say why in a
+                            // visible caption (disabled buttons get no hover or focus).
+                            readonly property string deleteDisabledReason: imageRowDelegate.inUse
+                                ? qsTr("In use by a container — remove the container first") : ""
+                            details: [qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)]
+                                .concat(imageRowDelegate.deleteDisabledReason.length > 0 ? [imageRowDelegate.deleteDisabledReason] : [])
+                            showFocusRing: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
+                            onActivated: {
+                                imagesList.currentIndex = imageRowDelegate.index
+                                imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags, imageRowDelegate.inUse)
                             }
 
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                border.color: palette.highlight
-                                border.width: 2
-                                visible: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
-                            }
+                            ColumnLayout {
+                                spacing: 4
 
-                            TapHandler {
-                                cursorShape: Qt.PointingHandCursor
-                                onTapped: {
-                                    imagesList.currentIndex = imageRowDelegate.index
-                                    imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags, imageRowDelegate.inUse)
+                                Button {
+                                    objectName: "tagImageButton_" + imageRowDelegate.imageId
+                                    text: qsTr("Tag")
+                                    enabled: !imageRowDelegate.busy
+                                    onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
+                                }
+
+                                Button {
+                                    objectName: "deleteImageButton_" + imageRowDelegate.imageId
+                                    Accessible.description: imageRowDelegate.deleteDisabledReason
+                                    text: imageRowDelegate.busy ? qsTr("Working...") : qsTr("Delete")
+                                    enabled: !imageRowDelegate.busy && !imageRowDelegate.inUse
+                                    onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
                                 }
                             }
                         }

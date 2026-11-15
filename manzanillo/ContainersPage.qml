@@ -64,7 +64,7 @@ Item {
         return projects
     }
 
-    StackView {
+    PageStack {
         id: containerStack
         objectName: "containerStack"
         anchors.fill: parent
@@ -104,8 +104,9 @@ Item {
                         }
 
                         ToolButton {
+                            objectName: "refreshContainersButton"
                             icon.name: "view-refresh"
-                            text: apiClient.containersBusy ? qsTr("Loading...") : qsTr("Refresh")
+                            text: qsTr("Refresh")
                             enabled: !apiClient.containersBusy
                             onClicked: apiClient.fetchContainers()
                         }
@@ -138,17 +139,33 @@ Item {
                         }
                     }
 
-                    Label {
-                        text: qsTr("Search")
-                        font.pixelSize: TypeScale.caption
+                    // Ctrl+F (platform Find) jumps to search, but only while this list is
+                    // what's on screen - not from another nav page or a pushed detail page.
+                    Shortcut {
+                        sequences: [StandardKey.Find]
+                        enabled: searchField.visible
+                        onActivated: {
+                            searchField.forceActiveFocus(Qt.ShortcutFocusReason)
+                            searchField.selectAll()
+                        }
                     }
 
                     TextField {
                         id: searchField
                         objectName: "containerSearchField"
                         Layout.fillWidth: true
-                        placeholderText: qsTr("Search containers by name or image…")
+                        placeholderText: qsTr("Search containers by name or image… (Ctrl+F)")
                         Accessible.name: qsTr("Search containers by name or image")
+                        // Esc clears a non-empty query; when already empty the key is left
+                        // unaccepted so window-level Esc handling still sees it.
+                        Keys.onEscapePressed: (event) => {
+                            if (text.length > 0) {
+                                clear()
+                                event.accepted = true
+                            } else {
+                                event.accepted = false
+                            }
+                        }
                         onTextChanged: {
                             apiClient.filteredContainersModel.setFilterText(text)
                             containersPage.searchText = text
@@ -171,6 +188,7 @@ Item {
 
                         Item {
                             Label {
+                                objectName: "containersEmptyLabel"
                                 anchors.centerIn: parent
                                 visible: containersList.count === 0 && !apiClient.containersBusy
                                 text: searchField.text.length > 0
@@ -178,6 +196,14 @@ Item {
                                     : qsTr("No containers found")
                                 font.pixelSize: TypeScale.body
                                 opacity: 0.7
+                            }
+
+                            BusyIndicator {
+                                objectName: "containersBusyIndicator"
+                                anchors.centerIn: parent
+                                visible: containersList.count === 0 && apiClient.containersBusy
+                                running: visible
+                                Accessible.name: qsTr("Loading containers")
                             }
 
                             ListView {
@@ -188,6 +214,8 @@ Item {
                                 spacing: 4
                                 model: apiClient.filteredContainersModel
                                 activeFocusOnTab: true
+                                Accessible.role: Accessible.List
+                                Accessible.name: qsTr("Containers")
 
                                 // Keyboard equivalent of tapping a row: arrow keys move currentIndex
                                 // (built into ListView), Enter/Return/Space opens its detail page.
@@ -198,7 +226,7 @@ Item {
                                     }
                                 }
 
-                                delegate: Frame {
+                                delegate: RowCard {
                                     id: containerRowDelegate
                                     required property int index
                                     required property string containerId
@@ -206,78 +234,31 @@ Item {
                                     required property string image
                                     required property string status
                                     required property string state
+                                    readonly property bool busy: apiClient.busyContainerIds.indexOf(containerRowDelegate.containerId) >= 0
+                                    objectName: "containerRow_" + containerRowDelegate.containerId
                                     width: containersList.width
-                                    // Frame only derives its implicit size automatically from a single
-                                    // content child; the focus-ring Rectangle below makes that two, so
-                                    // size it explicitly off the RowLayout instead.
-                                    implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
-
-                                    RowLayout {
-                                        id: contentRow
-                                        anchors.fill: parent
-                                        spacing: 8
-
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 2
-
-                                            RowLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 8
-
-                                                Label {
-                                                    text: containerRowDelegate.names
-                                                    font.bold: true
-                                                    font.pixelSize: TypeScale.body
-                                                    Layout.fillWidth: true
-                                                    elide: Text.ElideRight
-                                                }
-
-                                                StatusBadge {
-                                                    text: containerRowDelegate.state
-                                                    tint: containerRowDelegate.state === "running" ? Colors.success : Colors.disabled
-                                                }
-                                            }
-
-                                            Label {
-                                                text: qsTr("Image: %1").arg(containerRowDelegate.image)
-                                                font.pixelSize: TypeScale.caption
-                                                opacity: 0.7
-                                            }
-
-                                            Label {
-                                                text: qsTr("Status: %1").arg(containerRowDelegate.status)
-                                                font.pixelSize: TypeScale.caption
-                                                opacity: 0.7
-                                            }
-                                        }
-
-                                        Button {
-                                            objectName: "quickActionButton_" + containerRowDelegate.containerId
-                                            text: apiClient.containerActionBusy
-                                                ? qsTr("Working...")
-                                                : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                            enabled: !apiClient.containerActionBusy
-                                            onClicked: containerRowDelegate.state === "running"
-                                                ? apiClient.stopContainer(containerRowDelegate.containerId)
-                                                : apiClient.startContainer(containerRowDelegate.containerId)
-                                        }
+                                    title: containerRowDelegate.names
+                                    statusText: containerRowDelegate.state
+                                    statusTint: containerRowDelegate.state === "running" ? Colors.success : Colors.disabled
+                                    details: [
+                                        qsTr("Image: %1").arg(containerRowDelegate.image),
+                                        qsTr("Status: %1").arg(containerRowDelegate.status)
+                                    ]
+                                    showFocusRing: containerRowDelegate.ListView.isCurrentItem && containersList.activeFocus
+                                    onActivated: {
+                                        containersList.currentIndex = containerRowDelegate.index
+                                        containersPage.openContainerDetail(containerRowDelegate.containerId)
                                     }
 
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        color: "transparent"
-                                        border.color: palette.highlight
-                                        border.width: 2
-                                        visible: containerRowDelegate.ListView.isCurrentItem && containersList.activeFocus
-                                    }
-
-                                    TapHandler {
-                                        cursorShape: Qt.PointingHandCursor
-                                        onTapped: {
-                                            containersList.currentIndex = containerRowDelegate.index
-                                            containersPage.openContainerDetail(containerRowDelegate.containerId)
-                                        }
+                                    Button {
+                                        objectName: "quickActionButton_" + containerRowDelegate.containerId
+                                        text: containerRowDelegate.busy
+                                            ? qsTr("Working...")
+                                            : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
+                                        enabled: !containerRowDelegate.busy
+                                        onClicked: containerRowDelegate.state === "running"
+                                            ? apiClient.stopContainer(containerRowDelegate.containerId)
+                                            : apiClient.startContainer(containerRowDelegate.containerId)
                                     }
                                 }
                             }
@@ -288,10 +269,22 @@ Item {
                             clip: true
 
                             ColumnLayout {
+                                objectName: "composeProjectsList"
                                 width: composeScrollView.availableWidth
                                 spacing: 4
+                                Accessible.role: Accessible.List
+                                Accessible.name: qsTr("Compose projects")
+
+                                BusyIndicator {
+                                    objectName: "composeBusyIndicator"
+                                    Layout.alignment: Qt.AlignHCenter
+                                    visible: containersPage.filteredComposeProjects.length === 0 && apiClient.containersBusy
+                                    running: visible
+                                    Accessible.name: qsTr("Loading Compose projects")
+                                }
 
                                 Label {
+                                    objectName: "composeEmptyLabel"
                                     visible: containersPage.filteredComposeProjects.length === 0 && !apiClient.containersBusy
                                     text: searchField.text.length > 0
                                         ? qsTr("No Compose containers match \"%1\"").arg(searchField.text)
@@ -381,86 +374,31 @@ Item {
                                                         Repeater {
                                                             model: serviceDelegate.modelData.containers
 
-                                                            delegate: Frame {
+                                                            delegate: RowCard {
                                                                 id: containerDelegate
                                                                 required property var modelData
+                                                                readonly property bool busy: apiClient.busyContainerIds.indexOf(containerDelegate.modelData.id) >= 0
+                                                                objectName: "composeContainerRow_" + containerDelegate.modelData.id
                                                                 Layout.fillWidth: true
                                                                 activeFocusOnTab: true
-                                                                // Frame only derives its implicit size automatically from a single
-                                                                // content child; the focus-ring Rectangle below makes that two, so
-                                                                // size it explicitly off the RowLayout instead.
-                                                                implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
+                                                                title: containerDelegate.modelData.name
+                                                                statusText: containerDelegate.modelData.state
+                                                                statusTint: containerDelegate.modelData.state === "running" ? Colors.success : Colors.disabled
+                                                                details: [
+                                                                    qsTr("Image: %1").arg(containerDelegate.modelData.image),
+                                                                    qsTr("Status: %1").arg(containerDelegate.modelData.status)
+                                                                ]
+                                                                onActivated: containersPage.openContainerDetail(containerDelegate.modelData.id)
 
-                                                                Keys.onPressed: (event) => {
-                                                                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                                                        containersPage.openContainerDetail(containerDelegate.modelData.id)
-                                                                        event.accepted = true
-                                                                    }
-                                                                }
-
-                                                                RowLayout {
-                                                                    id: contentRow
-                                                                    anchors.fill: parent
-                                                                    spacing: 8
-
-                                                                    ColumnLayout {
-                                                                        Layout.fillWidth: true
-                                                                        spacing: 2
-
-                                                                        RowLayout {
-                                                                            Layout.fillWidth: true
-                                                                            spacing: 8
-
-                                                                            Label {
-                                                                                text: containerDelegate.modelData.name
-                                                                                font.bold: true
-                                                                                font.pixelSize: TypeScale.body
-                                                                                Layout.fillWidth: true
-                                                                                elide: Text.ElideRight
-                                                                            }
-
-                                                                            StatusBadge {
-                                                                                text: containerDelegate.modelData.state
-                                                                                tint: containerDelegate.modelData.state === "running" ? Colors.success : Colors.disabled
-                                                                            }
-                                                                        }
-
-                                                                        Label {
-                                                                            text: qsTr("Image: %1").arg(containerDelegate.modelData.image)
-                                                                            font.pixelSize: TypeScale.caption
-                                                                            opacity: 0.7
-                                                                        }
-
-                                                                        Label {
-                                                                            text: qsTr("Status: %1").arg(containerDelegate.modelData.status)
-                                                                            font.pixelSize: TypeScale.caption
-                                                                            opacity: 0.7
-                                                                        }
-                                                                    }
-
-                                                                    Button {
-                                                                        objectName: "quickActionButton_" + containerDelegate.modelData.id
-                                                                        text: apiClient.containerActionBusy
-                                                                            ? qsTr("Working...")
-                                                                            : (containerDelegate.modelData.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                                                        enabled: !apiClient.containerActionBusy
-                                                                        onClicked: containerDelegate.modelData.state === "running"
-                                                                            ? apiClient.stopContainer(containerDelegate.modelData.id)
-                                                                            : apiClient.startContainer(containerDelegate.modelData.id)
-                                                                    }
-                                                                }
-
-                                                                Rectangle {
-                                                                    anchors.fill: parent
-                                                                    color: "transparent"
-                                                                    border.color: palette.highlight
-                                                                    border.width: 2
-                                                                    visible: containerDelegate.activeFocus
-                                                                }
-
-                                                                TapHandler {
-                                                                    cursorShape: Qt.PointingHandCursor
-                                                                    onTapped: containersPage.openContainerDetail(containerDelegate.modelData.id)
+                                                                Button {
+                                                                    objectName: "quickActionButton_" + containerDelegate.modelData.id
+                                                                    text: containerDelegate.busy
+                                                                        ? qsTr("Working...")
+                                                                        : (containerDelegate.modelData.state === "running" ? qsTr("Stop") : qsTr("Start"))
+                                                                    enabled: !containerDelegate.busy
+                                                                    onClicked: containerDelegate.modelData.state === "running"
+                                                                        ? apiClient.stopContainer(containerDelegate.modelData.id)
+                                                                        : apiClient.startContainer(containerDelegate.modelData.id)
                                                                 }
                                                             }
                                                         }

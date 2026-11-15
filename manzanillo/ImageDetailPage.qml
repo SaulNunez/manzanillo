@@ -5,6 +5,8 @@ import QtQuick.Layouts
 Item {
     id: imageDetailPage
     required property string imageId
+    // Busy only while this image's own delete/tag is in flight.
+    readonly property bool actionBusy: apiClient.busyImageIds.indexOf(imageDetailPage.imageId) >= 0
     required property string tags
     required property bool inUse
 
@@ -157,7 +159,7 @@ Item {
                 Button {
                     objectName: "imageDetailTagButton"
                     text: qsTr("Tag")
-                    enabled: !apiClient.imageActionBusy
+                    enabled: !imageDetailPage.actionBusy
                     onClicked: {
                         tagRepositoryField.text = ""
                         tagTagField.text = ""
@@ -171,9 +173,9 @@ Item {
 
                 Button {
                     objectName: "imageDetailDeleteButton"
-                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
+                    text: imageDetailPage.actionBusy ? qsTr("Working...") : qsTr("Delete")
                     palette.buttonText: Colors.error
-                    enabled: !apiClient.imageActionBusy
+                    enabled: !imageDetailPage.actionBusy
                     onClicked: deleteImageDialog.open()
                 }
             }
