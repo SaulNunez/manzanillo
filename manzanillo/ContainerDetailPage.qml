@@ -5,6 +5,8 @@ import QtQuick.Layouts
 Item {
     id: containerDetailPage
     required property string containerId
+    // Busy only while this container's own start/stop is in flight (keyed by short id).
+    readonly property bool actionBusy: apiClient.busyContainerIds.indexOf(containerDetailPage.containerId.substring(0, 12)) >= 0
 
     Component.onCompleted: apiClient.fetchContainerDetail(containerDetailPage.containerId)
     // Belt-and-suspenders alongside the tab-switch handler below - guarantees the
@@ -128,17 +130,17 @@ Item {
 
                             Button {
                                 objectName: "startContainerButton"
-                                text: apiClient.containerActionBusy ? qsTr("Working...") : qsTr("Start")
+                                text: containerDetailPage.actionBusy ? qsTr("Working...") : qsTr("Start")
                                 visible: apiClient.containerDetail.state !== "running"
-                                enabled: !apiClient.containerActionBusy && !apiClient.containerDetailBusy
+                                enabled: !containerDetailPage.actionBusy && !apiClient.containerDetailBusy
                                 onClicked: apiClient.startContainer(apiClient.containerDetail.id)
                             }
 
                             Button {
                                 objectName: "stopContainerButton"
-                                text: apiClient.containerActionBusy ? qsTr("Working...") : qsTr("Stop")
+                                text: containerDetailPage.actionBusy ? qsTr("Working...") : qsTr("Stop")
                                 visible: apiClient.containerDetail.state === "running"
-                                enabled: !apiClient.containerActionBusy && !apiClient.containerDetailBusy
+                                enabled: !containerDetailPage.actionBusy && !apiClient.containerDetailBusy
                                 onClicked: apiClient.stopContainer(apiClient.containerDetail.id)
                             }
                         }

@@ -53,6 +53,9 @@ Window {
         edge: rtl ? Qt.RightEdge : Qt.LeftEdge
         modal: narrow
         interactive: narrow
+        // Docked, the drawer must not claim Esc/outside presses: an open popup with
+        // CloseOnEscape blocks every window Shortcut outside it (e.g. Ctrl+F).
+        closePolicy: narrow ? (Popup.CloseOnEscape | Popup.CloseOnPressOutside) : Popup.NoAutoClose
 
         Component.onCompleted: if (!narrow) open()
 
@@ -60,12 +63,19 @@ Window {
             id: nav
             objectName: "navList"
             anchors.fill: parent
-            model: [qsTr("Containers"), qsTr("Images"), qsTr("Volumes"), qsTr("Settings")]
+            model: [
+                { label: qsTr("Containers"), icon: "package-x-generic" },
+                { label: qsTr("Images"), icon: "media-optical" },
+                { label: qsTr("Volumes"), icon: "drive-harddisk" },
+                { label: qsTr("Settings"), icon: "preferences-system" }
+            ]
             currentIndex: 0
             delegate: ItemDelegate {
                 objectName: "navItem_" + index
                 width: nav.width
-                text: modelData
+                text: modelData.label
+                icon.name: modelData.icon
+                display: AbstractButton.TextBesideIcon
                 highlighted: ListView.isCurrentItem
                 onClicked: {
                     nav.currentIndex = index

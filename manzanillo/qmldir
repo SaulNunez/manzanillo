@@ -15,3 +15,4 @@ FlatToolBar 1.0 FlatToolBar.qml
 singleton Colors 1.0 Colors.qml
 singleton TypeScale 1.0 TypeScale.qml
 RowCard 1.0 RowCard.qml
+PageStack 1.0 PageStack.qml

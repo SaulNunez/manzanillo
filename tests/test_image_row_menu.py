@@ -111,3 +111,19 @@ def test_disabled_delete_in_menu_shows_reason(main_window, qtbot):
     delete = find_item(main_window.window, "deleteImageButton_" + IMAGE_ID)
     assert not delete.property("enabled")
     assert REASON in visible_texts(menu.property("contentItem"))
+
+
+def test_busy_row_shows_working_indicator_outside_the_menu(main_window, qtbot):
+    # Delete's "Working..." text is hidden inside the closed menu, so the row
+    # itself has to show that this image is busy (per-item busy, #6).
+    fake = main_window.fake
+    fake.images_model.set_images([
+        {"Id": IMAGE_ID, "RepoTags": ["nginx:latest"], "Containers": 0},
+        {"Id": "sha256:def", "RepoTags": ["redis:latest"], "Containers": 0},
+    ])
+    fake.set("busyImageIds", [IMAGE_ID])
+    find(main_window.window, "navList").setProperty("currentIndex", 1)
+    qtbot.wait(10)
+
+    assert find_item(main_window.window, "imageBusyIndicator_" + IMAGE_ID).property("visible")
+    assert not find_item(main_window.window, "imageBusyIndicator_sha256:def").property("visible")

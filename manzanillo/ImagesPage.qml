@@ -275,7 +275,7 @@ Item {
         }
     }
 
-    StackView {
+    PageStack {
         id: imageStack
         objectName: "imageStack"
         anchors.fill: parent
@@ -419,6 +419,7 @@ Item {
                             required property string size
                             required property string created
                             required property bool inUse
+                            readonly property bool busy: apiClient.busyImageIds.indexOf(imageRowDelegate.imageId) >= 0
                             objectName: "imageRow_" + imageRowDelegate.imageId
                             width: imagesList.width
                             title: imageRowDelegate.tags
@@ -442,6 +443,17 @@ Item {
                                 imageActionsMenu.popup(imageActionsButton, 0, imageActionsButton.height)
                             }
 
+                            // "Working..." on Delete is hidden in the closed menu, so show
+                            // this image's busy state on the row itself.
+                            BusyIndicator {
+                                objectName: "imageBusyIndicator_" + imageRowDelegate.imageId
+                                visible: imageRowDelegate.busy
+                                running: visible
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                Accessible.name: qsTr("Working...")
+                            }
+
                             ToolButton {
                                 id: imageActionsButton
                                 objectName: "imageActionsButton_" + imageRowDelegate.imageId
@@ -459,15 +471,15 @@ Item {
                                     MenuItem {
                                         objectName: "tagImageButton_" + imageRowDelegate.imageId
                                         text: qsTr("Tag")
-                                        enabled: !apiClient.imageActionBusy
+                                        enabled: !imageRowDelegate.busy
                                         onTriggered: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
                                     }
 
                                     MenuItem {
                                         objectName: "deleteImageButton_" + imageRowDelegate.imageId
                                         Accessible.description: imageRowDelegate.deleteDisabledReason
-                                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                        enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
+                                        text: imageRowDelegate.busy ? qsTr("Working...") : qsTr("Delete")
+                                        enabled: !imageRowDelegate.busy && !imageRowDelegate.inUse
                                         onTriggered: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
                                     }
 
