@@ -315,22 +315,25 @@ Item {
                         }
 
                         ToolButton {
+                            objectName: "pullImageToolButton"
                             icon.name: "download"
-                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
+                            text: qsTr("Pull Image")
                             enabled: !apiClient.imageActionBusy
                             onClicked: imagesPage.openPullImageDialog()
                         }
 
                         ToolButton {
+                            objectName: "buildImageToolButton"
                             icon.name: "run-build"
-                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
+                            text: qsTr("Build Image")
                             enabled: !apiClient.imageActionBusy
                             onClicked: imagesPage.openBuildImageDialog()
                         }
 
                         ToolButton {
+                            objectName: "refreshImagesButton"
                             icon.name: "view-refresh"
-                            text: apiClient.imagesBusy ? qsTr("Loading...") : qsTr("Refresh")
+                            text: qsTr("Refresh")
                             enabled: !apiClient.imagesBusy
                             onClicked: apiClient.fetchImages()
                         }
@@ -368,11 +371,20 @@ Item {
                         Layout.fillHeight: true
 
                         Label {
+                            objectName: "imagesEmptyLabel"
                             anchors.centerIn: parent
                             visible: imagesList.count === 0 && !apiClient.imagesBusy
                             text: qsTr("No images found")
                             font.pixelSize: TypeScale.body
                             opacity: 0.7
+                        }
+
+                        BusyIndicator {
+                            objectName: "imagesBusyIndicator"
+                            anchors.centerIn: parent
+                            visible: imagesList.count === 0 && apiClient.imagesBusy
+                            running: visible
+                            Accessible.name: qsTr("Loading images")
                         }
 
                         ListView {
@@ -408,7 +420,12 @@ Item {
                             title: imageRowDelegate.tags
                             statusText: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
                             statusTint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
+                            // Delete is disabled while the image is in use; say why in a
+                            // visible caption (disabled buttons get no hover or focus).
+                            readonly property string deleteDisabledReason: imageRowDelegate.inUse
+                                ? qsTr("In use by a container — remove the container first") : ""
                             details: [qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)]
+                                .concat(imageRowDelegate.deleteDisabledReason.length > 0 ? [imageRowDelegate.deleteDisabledReason] : [])
                             showFocusRing: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
                             onActivated: {
                                 imagesList.currentIndex = imageRowDelegate.index
@@ -427,6 +444,7 @@ Item {
 
                                 Button {
                                     objectName: "deleteImageButton_" + imageRowDelegate.imageId
+                                    Accessible.description: imageRowDelegate.deleteDisabledReason
                                     text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
                                     enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
                                     onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
