@@ -16,30 +16,26 @@ QtObject {
     readonly property color warning: dark ? "#f5c060" : "#7a4f00"
     readonly property color neutral: dark ? "#c4c4c4" : "#595959"
 
-    // Badge tint and translated label for a Docker container state
-    // (created, running, paused, restarting, removing, exited, dead).
+    // Docker container states -> badge tone (one of the tokens above) and translated
+    // label, so a state's colour and text are defined in one place.
+    readonly property var containerStates: ({
+        "running": { tone: "success", label: qsTr("Running") },
+        "restarting": { tone: "warning", label: qsTr("Restarting") },
+        "paused": { tone: "warning", label: qsTr("Paused") },
+        "dead": { tone: "danger", label: qsTr("Dead") },
+        "exited": { tone: "neutral", label: qsTr("Exited") },
+        "created": { tone: "neutral", label: qsTr("Created") },
+        "removing": { tone: "neutral", label: qsTr("Removing") }
+    })
+
     function containerStateTint(state) {
-        switch (state) {
-        case "running": return colors.success
-        case "restarting":
-        case "paused": return colors.warning
-        case "dead":
-        case "failed": return colors.danger
-        default: return colors.neutral
-        }
+        const entry = colors.containerStates[state]
+        return colors[entry ? entry.tone : "neutral"]
     }
 
+    // An unknown state shows Docker's raw value rather than nothing.
     function containerStateLabel(state) {
-        switch (state) {
-        case "running": return qsTr("Running")
-        case "restarting": return qsTr("Restarting")
-        case "paused": return qsTr("Paused")
-        case "dead": return qsTr("Dead")
-        case "failed": return qsTr("Failed")
-        case "exited": return qsTr("Exited")
-        case "created": return qsTr("Created")
-        case "removing": return qsTr("Removing")
-        default: return state || ""
-        }
+        const entry = colors.containerStates[state]
+        return entry ? entry.label : (state || "")
     }
 }

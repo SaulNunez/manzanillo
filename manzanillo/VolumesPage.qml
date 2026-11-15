@@ -17,12 +17,11 @@ Item {
         volumeStack.push("VolumeDetailPage.qml", { volumeName: name, inUse: inUse })
     }
 
-    Dialog {
+    AppDialog {
         id: deleteVolumeDialog
         objectName: "deleteVolumeDialog"
         property string volumeName: ""
 
-        modal: true
         title: qsTr("Delete volume")
         footer: DialogButtonBox {
             Button {
@@ -37,8 +36,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(360, Overlay.overlay.width - 32) : 360
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 360
 
         onAccepted: apiClient.deleteVolume(deleteVolumeDialog.volumeName)
 
@@ -150,7 +148,7 @@ Item {
                             required property string mountpoint
                             required property string created
                             required property bool inUse
-                            readonly property bool busy: apiClient.busyVolumeNames.indexOf(volumeRowDelegate.name) >= 0
+                            readonly property bool busy: Busy.volume(volumeRowDelegate.name)
                             objectName: "volumeRow_" + volumeRowDelegate.name
                             width: volumesList.width
                             title: volumeRowDelegate.name

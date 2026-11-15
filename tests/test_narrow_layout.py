@@ -5,9 +5,9 @@ PageToolBar, whose actions move into a keyboard-reachable overflow menu when the
 don't fit; dialogs never grow wider/taller than the window.
 """
 import pytest
-from PySide6.QtCore import QMetaObject, QPointF, Qt
+from PySide6.QtCore import QPointF, Qt
 
-from qml_helpers import call_qml, find, find_item
+from qml_helpers import call_qml, find, find_item, focus, show_page
 
 ACTIONS_BY_PAGE = {
     0: ["refreshContainersButton"],
@@ -43,22 +43,9 @@ def translate_long(main_window, qtbot, names):
     qtbot.wait(20)
 
 
-def show_page(main_window, qtbot, index):
-    find(main_window.window, "navList").setProperty("currentIndex", index)
-    qtbot.wait(20)
-
-
 def scene_rect(item):
     top_left = item.mapToScene(QPointF(0, 0))
     return top_left.x(), top_left.y(), item.width(), item.height()
-
-
-def focus(main_window, item, qtbot):
-    window = main_window.window
-    window.requestActivate()
-    qtbot.waitUntil(lambda: window.isActive())
-    QMetaObject.invokeMethod(item, "forceActiveFocus")
-    qtbot.waitUntil(lambda: item.property("activeFocus"))
 
 
 def test_window_declares_a_minimum_size(main_window):

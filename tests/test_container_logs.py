@@ -1,9 +1,9 @@
 """Container log viewer: follows new output only while the user wants it to (#10)."""
 import pytest
-from PySide6.QtCore import QMetaObject, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
-from qml_helpers import call_qml, find
+from qml_helpers import call_qml, find, focus
 
 
 def lines(start, count):
@@ -31,14 +31,6 @@ def max_y(flick):
 
 def at_bottom(flick):
     return flick.property("contentY") >= max_y(flick) - 1
-
-
-def focus(main_window, item, qtbot):
-    window = main_window.window
-    window.requestActivate()
-    qtbot.waitUntil(lambda: window.isActive())
-    QMetaObject.invokeMethod(item, "forceActiveFocus")
-    qtbot.waitUntil(lambda: item.property("activeFocus"))
 
 
 def append(main_window, count):

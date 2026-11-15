@@ -7,9 +7,11 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from PySide6.QtCore import Q_ARG, Q_RETURN_ARG, QMetaObject, QObject, QtMsgType
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtCore import Q_ARG, Q_RETURN_ARG, QMetaObject, QObject, QPointF, QtMsgType
+from PySide6.QtGui import QAccessible
+from PySide6.QtQml import QQmlApplicationEngine, QQmlEngine, QQmlExpression
 from PySide6.QtQuick import QQuickItem, QQuickWindow
+from shiboken6 import getCppPointer
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -40,17 +42,103 @@ def find_item(root, object_name):
     """Like ``find``, but also reaches view delegates (ListView/Repeater rows).
 
     Delegates are only parented visually (``parentItem``), so ``findChild`` misses
-    them; this walks QObject children and visual child items alike.
+    them; this walks QObject children and visual child items alike, visiting each
+    object once (most items are both, so without that a miss would crawl).
     """
     pending = [root.contentItem() if isinstance(root, QQuickWindow) else root]
+    seen = set()
     while pending:
         obj = pending.pop()
+        key = getCppPointer(obj)[0]  # id() of a transient Python wrapper gets reused
+        if key in seen:
+            continue
+        seen.add(key)
         if obj.objectName() == object_name:
             return obj
         pending.extend(obj.children())
         if isinstance(obj, QQuickItem):
             pending.extend(obj.childItems())
     raise AssertionError(f"no QML item with objectName {object_name!r}")
+
+
+def qml_eval(item, expression):
+    """Evaluate a QML expression in ``item``'s scope (for gadget/enum properties
+    like ``icon.name`` or ``display === AbstractButton.IconOnly``)."""
+    context = None
+    owner = item
+    while context is None and owner is not None:  # control internals have no context of their own
+        context = QQmlEngine.contextForObject(owner)
+        owner = owner.parent()
+    value, _ = QQmlExpression(context, item, expression).evaluate()
+    return value
+
+
+def show_page(main_window, qtbot, index):
+    """Switch the main window to nav page ``index`` (0 containers, 1 images, 2 volumes, 3 settings)."""
+    find(main_window.window, "navList").setProperty("currentIndex", index)
+    qtbot.wait(20)
+
+
+def open_detail(main_window, qtbot, nav_index, stack_name, open_function, args):
+    """Show nav page ``nav_index`` and push a detail page with ``open_function(*args)``;
+    returns the page's StackView once the detail page is on it and the window is active."""
+    window = main_window.window
+    find(window, "navList").setProperty("currentIndex", nav_index)
+    stack = find(window, stack_name)
+    call_qml(stack.parentItem(), open_function, *args)
+    qtbot.waitUntil(lambda: stack.property("depth") == 2)
+    window.requestActivate()
+    qtbot.waitUntil(lambda: window.isActive())
+    return stack
+
+
+def settle(stack, qtbot):
+    """Wait for a StackView push transition and layout to finish so items are where they'll stay."""
+    qtbot.waitUntil(lambda: not stack.property("busy"))
+    qtbot.wait(50)
+
+
+def focus(main_window, item, qtbot):
+    """Activate the window and give ``item`` active focus (for keyboard tests)."""
+    window = main_window.window
+    window.requestActivate()
+    qtbot.waitUntil(lambda: window.isActive())
+    QMetaObject.invokeMethod(item, "forceActiveFocus")
+    qtbot.waitUntil(lambda: item.property("activeFocus"))
+
+
+def scene_x(item):
+    """``item``'s left edge in scene coordinates."""
+    return item.mapToScene(QPointF(0, 0)).x()
+
+
+def accessible_name(item):
+    """The name screen readers announce for ``item``."""
+    iface = QAccessible.queryAccessibleInterface(item)
+    assert iface is not None, f"{item.objectName()} has no accessible interface"
+    return iface.text(QAccessible.Text.Name)
+
+
+def accessible_description(item):
+    """The accessible description screen readers announce for ``item``."""
+    iface = QAccessible.queryAccessibleInterface(item)
+    assert iface is not None, f"{item.objectName()} has no accessible interface"
+    return iface.text(QAccessible.Text.Description)
+
+
+def visible_texts(item):
+    """Texts of all visible text items under ``item`` (as a sighted user sees them)."""
+    texts = []
+    pending = [item]
+    while pending:
+        obj = pending.pop()
+        if not obj.property("visible"):
+            continue
+        text = obj.property("text")
+        if isinstance(text, str) and obj.metaObject().indexOfProperty("font") >= 0:
+            texts.append(text)
+        pending.extend(obj.childItems())
+    return texts
 
 
 @dataclass

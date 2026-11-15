@@ -38,13 +38,12 @@ Item {
     }
 
 
-    Dialog {
+    AppDialog {
         id: deleteImageDialog
         objectName: "deleteImageDialog"
         property string imageId: ""
         property string imageTags: ""
 
-        modal: true
         title: qsTr("Delete image")
         footer: DialogButtonBox {
             Button {
@@ -59,8 +58,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(360, Overlay.overlay.width - 32) : 360
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 360
 
         onAccepted: apiClient.deleteImage(deleteImageDialog.imageId)
 
@@ -71,14 +69,12 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: pullImageDialog
         objectName: "pullImageDialog"
 
-        modal: true
         title: qsTr("Pull image")
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(400, Overlay.overlay.width - 32) : 400
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 400
 
         readonly property bool inputValid: pullReferenceField.text.trim().length > 0
 
@@ -121,17 +117,15 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: buildImageDialog
         objectName: "buildImageDialog"
 
-        modal: true
         title: qsTr("Build image")
         // Only a Close button - building doesn't close the dialog, since the log
         // view needs to stay visible while the build streams in.
         standardButtons: Dialog.Close
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(480, Overlay.overlay.width - 32) : 480
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 480
 
         contentItem: ColumnLayout {
             width: buildImageDialog.availableWidth
@@ -211,15 +205,13 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: tagImageDialog
         objectName: "tagImageDialog"
         property string imageId: ""
 
-        modal: true
         title: qsTr("Add tag")
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(400, Overlay.overlay.width - 32) : 400
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 400
 
         readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
 
@@ -396,7 +388,7 @@ Item {
                             required property string size
                             required property string created
                             required property bool inUse
-                            readonly property bool busy: apiClient.busyImageIds.indexOf(imageRowDelegate.imageId) >= 0
+                            readonly property bool busy: Busy.image(imageRowDelegate.imageId)
                             objectName: "imageRow_" + imageRowDelegate.imageId
                             width: imagesList.width
                             title: imageRowDelegate.tags

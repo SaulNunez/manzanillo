@@ -1,8 +1,8 @@
 """Dialogs: required fields gate OK, Enter submits, Esc cancels, deletes say "Delete" (#8)."""
 import pytest
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import Qt
 
-from qml_helpers import call_qml, find
+from qml_helpers import call_qml, find, scene_x
 
 
 def images_page(main_window):
@@ -183,10 +183,6 @@ def test_delete_cancel_button_does_not_delete(main_window, qtbot, opener):
     find(dialog, dialog_name + "CancelButton").clicked.emit()
     qtbot.waitUntil(lambda: not dialog.property("visible"))
     assert expected_call not in main_window.fake.calls
-
-
-def scene_x(item):
-    return item.mapToScene(QPointF(0, 0)).x()
 
 
 def text_colour(button):

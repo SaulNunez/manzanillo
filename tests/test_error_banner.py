@@ -8,8 +8,7 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
-from qml_helpers import call_qml, find
-from test_search_nav_motion import qml_eval
+from qml_helpers import call_qml, find, qml_eval
 
 CONTAINER_ID = "a" * 64
 IMAGE_ID = "sha256:" + "b" * 64
@@ -131,3 +130,33 @@ def test_dismiss_button_is_keyboard_reachable(main_window, qtbot, page):
     qtbot.wait(10)
 
     assert banner.property("visible") is False
+
+
+@pytest.mark.parametrize("prop, started", [
+    ("containerDetailBusy", True),
+    ("busyContainerIds", [CONTAINER_ID[:12]]),
+])
+def test_open_log_stream_does_not_block_clearing(main_window, qtbot, prop, started):
+    # The log stream stays up for as long as the Logs tab is open; it must not
+    # count as "work in flight", or later fetches/actions never clear the banner.
+    banner = show(main_window, qtbot, "container-detail")
+    main_window.fake.set("containerLogsStreaming", True)
+    fail(main_window, qtbot, "container-detail-action")
+    assert banner.property("visible") is True
+
+    main_window.fake.set(prop, started)
+    qtbot.wait(10)
+
+    assert banner.property("visible") is False
+
+
+def test_switching_to_logs_tab_clears_banner(main_window, qtbot):
+    banner = show(main_window, qtbot, "container-detail")
+    main_window.fake.set("containerLogsStreaming", True)
+    fail(main_window, qtbot, "container-logs")
+
+    find(main_window.window, "containerDetailTabBar").setProperty("currentIndex", 1)
+    qtbot.wait(10)
+
+    assert banner.property("visible") is False
+    assert ("startContainerLogs", CONTAINER_ID) in main_window.fake.calls

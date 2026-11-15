@@ -1,19 +1,10 @@
 """Search shortcuts, nav icons and the Reduce motion setting (issue #17)."""
 import pytest
 from PySide6.QtCore import QMetaObject, QSettings, Qt
-from PySide6.QtQml import QQmlEngine, QQmlExpression
 from PySide6.QtTest import QTest
 
 from api_client import ApiClient
-from qml_helpers import call_qml, find, find_item
-
-
-def focus(main_window, item, qtbot):
-    window = main_window.window
-    window.requestActivate()
-    qtbot.waitUntil(lambda: window.isActive())
-    QMetaObject.invokeMethod(item, "forceActiveFocus")
-    qtbot.waitUntil(lambda: item.property("activeFocus"))
+from qml_helpers import call_qml, find, find_item, focus, qml_eval
 
 
 def test_ctrl_f_focuses_the_container_search_field(main_window, qtbot):
@@ -36,14 +27,7 @@ def test_escape_clears_the_container_search_field(main_window, qtbot):
     assert search.property("text") == ""
 
 
-
 NAV_LABELS = ["Containers", "Images", "Volumes", "Settings"]
-
-
-def qml_eval(item, expression):
-    """Evaluate a QML expression in ``item``'s scope (for gadget/enum properties)."""
-    value, _ = QQmlExpression(QQmlEngine.contextForObject(item), item, expression).evaluate()
-    return value
 
 
 def test_each_nav_item_shows_an_icon_beside_its_label(main_window):

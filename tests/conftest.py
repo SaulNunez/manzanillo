@@ -6,6 +6,7 @@
 - ``load_qml``: load any QML file/component with the fake as ``apiClient``.
 - ``main_window``: the full app (Main.qml) loaded with the fake.
 - ``user_locale``: pins the default QLocale and TZ (UTC) for formatting tests.
+- ``rtl``: lays the app out right-to-left (as in an RTL locale) for the test.
 """
 import os
 import time
@@ -13,7 +14,7 @@ import time
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest  # noqa: E402
-from PySide6.QtCore import QLocale, QUrl, qInstallMessageHandler  # noqa: E402
+from PySide6.QtCore import QLocale, Qt, QUrl, qInstallMessageHandler  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuickControls2 import QQuickStyle  # noqa: E402
 
@@ -99,3 +100,11 @@ def user_locale(monkeypatch):
     QLocale.setDefault(previous)
     monkeypatch.undo()
     time.tzset()
+
+
+@pytest.fixture
+def rtl(qapp):
+    """Lay the app out right-to-left, as it would be in an RTL locale."""
+    qapp.setLayoutDirection(Qt.RightToLeft)
+    yield
+    qapp.setLayoutDirection(Qt.LeftToRight)

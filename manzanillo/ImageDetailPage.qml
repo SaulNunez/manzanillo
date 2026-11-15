@@ -6,7 +6,7 @@ Item {
     id: imageDetailPage
     required property string imageId
     // Busy only while this image's own delete/tag is in flight.
-    readonly property bool actionBusy: apiClient.busyImageIds.indexOf(imageDetailPage.imageId) >= 0
+    readonly property bool actionBusy: Busy.image(imageDetailPage.imageId)
     required property string tags
     required property bool inUse
 
@@ -22,10 +22,9 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: deleteImageDialog
         objectName: "imageDetailDeleteDialog"
-        modal: true
         title: qsTr("Delete image")
         footer: DialogButtonBox {
             Button {
@@ -40,8 +39,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(360, Overlay.overlay.width - 32) : 360
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 360
 
         // Deleting removes the image, so there's nothing left to show here - pop
         // back to the list right away instead of waiting to see if it succeeded.
@@ -57,13 +55,11 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: tagImageDialog
         objectName: "imageDetailTagDialog"
-        modal: true
         title: qsTr("Add tag")
-        width: Overlay.overlay && Overlay.overlay.width > 0 ? Math.min(400, Overlay.overlay.width - 32) : 400
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 400
 
         readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
 
@@ -173,11 +169,26 @@ Item {
 
                 Button {
                     objectName: "imageDetailDeleteButton"
+                    Accessible.description: deleteReasonLabel.visible ? deleteReasonLabel.text : ""
                     text: imageDetailPage.actionBusy ? qsTr("Working...") : qsTr("Delete")
                     palette.buttonText: Colors.danger
-                    enabled: !imageDetailPage.actionBusy
+                    enabled: !imageDetailPage.actionBusy && !imageDetailPage.inUse
                     onClicked: deleteImageDialog.open()
                 }
+            }
+
+            // Delete is disabled while the image is in use; say why in a visible
+            // caption under it (disabled buttons get no hover or keyboard focus).
+            Label {
+                id: deleteReasonLabel
+                objectName: "imageDetailDeleteReason"
+                visible: imageDetailPage.inUse
+                text: qsTr("In use by a container — remove the container first")
+                font.pointSize: TypeScale.caption
+                opacity: 0.7
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignRight
+                Layout.fillWidth: true
             }
 
             RowLayout {

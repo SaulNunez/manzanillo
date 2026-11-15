@@ -9,7 +9,7 @@ import pytest
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QAccessible, QAccessibleActionInterface
 
-from qml_helpers import call_qml, find, find_item
+from qml_helpers import call_qml, find, find_item, show_page
 
 CONTAINER_ID = "a" * 64
 
@@ -25,11 +25,6 @@ def press(item):
     assert actions is not None, f"{item.objectName()} exposes no accessible actions"
     assert QAccessibleActionInterface.pressAction() in actions.actionNames()
     actions.doAction(QAccessibleActionInterface.pressAction())
-
-
-def show_page(main_window, qtbot, index):
-    find(main_window.window, "navList").setProperty("currentIndex", index)
-    qtbot.wait(10)
 
 
 @pytest.mark.parametrize("list_name, expected", [
