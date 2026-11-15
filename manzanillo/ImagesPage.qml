@@ -346,23 +346,19 @@ Item {
                     Layout.margins: 12
                     spacing: 8
 
-                    Label {
+                    ErrorBanner {
                         id: errorLabel
-                        visible: false
-                        color: Colors.danger
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        objectName: "imagesErrorBanner"
+                        busy: apiClient.imagesBusy || apiClient.imageActionBusy || apiClient.busyImageIds.length > 0
                     }
 
                     Connections {
                         target: apiClient
                         function onImagesErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                         function onImageActionErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                     }
 

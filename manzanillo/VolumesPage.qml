@@ -104,23 +104,19 @@ Item {
                     Layout.margins: 12
                     spacing: 8
 
-                    Label {
+                    ErrorBanner {
                         id: errorLabel
-                        visible: false
-                        color: Colors.danger
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        objectName: "volumesErrorBanner"
+                        busy: apiClient.volumesBusy || apiClient.busyVolumeNames.length > 0
                     }
 
                     Connections {
                         target: apiClient
                         function onVolumesErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                         function onVolumeActionErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                     }
 
