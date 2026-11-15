@@ -213,24 +213,74 @@ Item {
                     width: detailScrollView.availableWidth
                     spacing: 4
 
-                    Label { text: qsTr("Id: %1").arg(apiClient.imageDetail.id); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    // Label column (caption) and value column (body), so values line
+                    // up and translations don't carry "Key: %1" layout.
+                    GridLayout {
+                        objectName: "imageDetailFields"
+                        Layout.fillWidth: true
+                        columns: 2
+                        columnSpacing: 16
+                        rowSpacing: 6
 
-                    RowLayout {
-                        spacing: 8
+                        FieldLabel { text: qsTr("ID") }
+                        FieldValue {
+                            objectName: "imageDetailIdValue"
+                            text: apiClient.imageDetail.id || ""
+                            copyable: true
+                            copyName: qsTr("image ID")
+                        }
 
-                        Label { text: qsTr("Status:"); font.pointSize: TypeScale.body }
+                        FieldLabel { text: qsTr("Status"); Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft; Layout.topMargin: 0 }
                         StatusBadge {
                             text: imageDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
                             tint: imageDetailPage.inUse ? Colors.success : Colors.neutral
                         }
-                    }
 
-                    Label { text: qsTr("Created: %1").arg(apiClient.imageDetail.created); font.pointSize: TypeScale.body }
-                    Label { text: qsTr("Size: %1").arg(apiClient.imageDetail.size); font.pointSize: TypeScale.body }
-                    Label { text: qsTr("Architecture: %1    OS: %2").arg(apiClient.imageDetail.architecture).arg(apiClient.imageDetail.os); font.pointSize: TypeScale.body }
-                    Label { text: qsTr("Author: %1").arg(apiClient.imageDetail.author); font.pointSize: TypeScale.body; visible: !!apiClient.imageDetail.author }
-                    Label { text: qsTr("Command: %1").arg(apiClient.imageDetail.command); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.imageDetail.command }
-                    Label { text: qsTr("Working Dir: %1").arg(apiClient.imageDetail.workingDir); font.pointSize: TypeScale.body; visible: !!apiClient.imageDetail.workingDir }
+                        FieldLabel { text: qsTr("Created") }
+                        FieldValue {
+                            objectName: "imageDetailCreatedValue"
+                            text: apiClient.imageDetail.created || ""
+                        }
+
+                        FieldLabel { text: qsTr("Size") }
+                        FieldValue {
+                            objectName: "imageDetailSizeValue"
+                            text: apiClient.imageDetail.size || ""
+                        }
+
+                        FieldLabel { text: qsTr("Architecture") }
+                        FieldValue {
+                            objectName: "imageDetailArchitectureValue"
+                            text: apiClient.imageDetail.architecture || ""
+                        }
+
+                        FieldLabel { text: qsTr("OS") }
+                        FieldValue {
+                            objectName: "imageDetailOsValue"
+                            text: apiClient.imageDetail.os || ""
+                        }
+
+                        FieldLabel { text: qsTr("Author"); visible: !!apiClient.imageDetail.author }
+                        FieldValue {
+                            objectName: "imageDetailAuthorValue"
+                            text: apiClient.imageDetail.author || ""
+                            visible: !!apiClient.imageDetail.author
+                        }
+
+                        FieldLabel { text: qsTr("Command"); visible: !!apiClient.imageDetail.command }
+                        FieldValue {
+                            objectName: "imageDetailCommandValue"
+                            text: apiClient.imageDetail.command || ""
+                            visible: !!apiClient.imageDetail.command
+                        }
+
+                        FieldLabel { text: qsTr("Working directory"); visible: !!apiClient.imageDetail.workingDir }
+                        FieldValue {
+                            objectName: "imageDetailWorkingDirValue"
+                            text: apiClient.imageDetail.workingDir || ""
+                            visible: !!apiClient.imageDetail.workingDir
+                        }
+                    }
 
                     SectionHeading { text: qsTr("Tags") }
                     Label {
@@ -241,7 +291,7 @@ Item {
                     }
                     Repeater {
                         model: apiClient.imageDetail.tags || []
-                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Digests") }
@@ -253,7 +303,7 @@ Item {
                     }
                     Repeater {
                         model: apiClient.imageDetail.digests || []
-                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; required property int index; objectName: "imageDigestValue_" + index; text: modelData; copyable: true; copyName: qsTr("digest") }
                     }
 
                     SectionHeading { text: qsTr("Exposed Ports") }
@@ -265,7 +315,7 @@ Item {
                     }
                     Repeater {
                         model: apiClient.imageDetail.exposedPorts || []
-                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Environment") }
@@ -277,7 +327,7 @@ Item {
                     }
                     Repeater {
                         model: apiClient.imageDetail.env || []
-                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Labels") }
@@ -289,7 +339,7 @@ Item {
                     }
                     Repeater {
                         model: apiClient.imageDetail.labels || []
-                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Layers") }
@@ -301,14 +351,7 @@ Item {
                     }
                     Repeater {
                         model: apiClient.imageDetail.layers || []
-                        delegate: Label {
-                            required property string modelData
-                            text: modelData
-                            wrapMode: Text.WrapAnywhere
-                            Layout.fillWidth: true
-                            font.family: "monospace"
-                            font.pointSize: TypeScale.monospace
-                        }
+                        delegate: FieldValue { required property string modelData; text: modelData; monospace: true }
                     }
                 }
             }

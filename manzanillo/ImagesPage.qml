@@ -406,7 +406,7 @@ Item {
                             // visible caption (disabled buttons get no hover or focus).
                             readonly property string deleteDisabledReason: imageRowDelegate.inUse
                                 ? qsTr("In use by a container — remove the container first") : ""
-                            details: [qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)]
+                            details: [[qsTr("Size: %1").arg(imageRowDelegate.size), qsTr("Created: %1").arg(imageRowDelegate.created)].join(" · ")]
                                 .concat(imageRowDelegate.deleteDisabledReason.length > 0 ? [imageRowDelegate.deleteDisabledReason] : [])
                             showFocusRing: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
                             onActivated: {

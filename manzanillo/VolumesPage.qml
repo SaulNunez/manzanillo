@@ -161,7 +161,7 @@ Item {
                             readonly property string deleteDisabledReason: volumeRowDelegate.inUse
                                 ? qsTr("In use by a container — remove the container first") : ""
                             details: [
-                                qsTr("Driver: %1    Created: %2").arg(volumeRowDelegate.driver).arg(volumeRowDelegate.created),
+                                [qsTr("Driver: %1").arg(volumeRowDelegate.driver), qsTr("Created: %1").arg(volumeRowDelegate.created)].join(" · "),
                                 volumeRowDelegate.mountpoint
                             ].concat(volumeRowDelegate.deleteDisabledReason.length > 0 ? [volumeRowDelegate.deleteDisabledReason] : [])
                             showFocusRing: volumeRowDelegate.ListView.isCurrentItem && volumesList.activeFocus

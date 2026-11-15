@@ -159,10 +159,39 @@ Item {
                     width: detailScrollView.availableWidth
                     spacing: 4
 
-                    Label { text: qsTr("Driver: %1").arg(apiClient.volumeDetail.driver); font.pointSize: TypeScale.body }
-                    Label { text: qsTr("Scope: %1").arg(apiClient.volumeDetail.scope); font.pointSize: TypeScale.body }
-                    Label { text: qsTr("Created: %1").arg(apiClient.volumeDetail.created); font.pointSize: TypeScale.body }
-                    Label { text: qsTr("Mountpoint: %1").arg(apiClient.volumeDetail.mountpoint); font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    // Label column (caption) and value column (body), so values line
+                    // up and translations don't carry "Key: %1" layout.
+                    GridLayout {
+                        objectName: "volumeDetailFields"
+                        Layout.fillWidth: true
+                        columns: 2
+                        columnSpacing: 16
+                        rowSpacing: 6
+
+                        FieldLabel { text: qsTr("Driver") }
+                        FieldValue {
+                            objectName: "volumeDetailDriverValue"
+                            text: apiClient.volumeDetail.driver || ""
+                        }
+
+                        FieldLabel { text: qsTr("Scope") }
+                        FieldValue {
+                            objectName: "volumeDetailScopeValue"
+                            text: apiClient.volumeDetail.scope || ""
+                        }
+
+                        FieldLabel { text: qsTr("Created") }
+                        FieldValue {
+                            objectName: "volumeDetailCreatedValue"
+                            text: apiClient.volumeDetail.created || ""
+                        }
+
+                        FieldLabel { text: qsTr("Mountpoint") }
+                        FieldValue {
+                            objectName: "volumeDetailMountpointValue"
+                            text: apiClient.volumeDetail.mountpoint || ""
+                        }
+                    }
 
                     SectionHeading { text: qsTr("Labels") }
                     Label {
@@ -173,7 +202,7 @@ Item {
                     }
                     Repeater {
                         model: apiClient.volumeDetail.labels || []
-                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Options") }
@@ -185,7 +214,7 @@ Item {
                     }
                     Repeater {
                         model: apiClient.volumeDetail.options || []
-                        delegate: Label { required property string modelData; text: modelData; font.pointSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
                 }
             }
