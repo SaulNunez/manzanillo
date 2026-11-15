@@ -46,7 +46,19 @@ Item {
 
         modal: true
         title: qsTr("Delete image")
-        standardButtons: Dialog.Yes | Dialog.No
+        footer: DialogButtonBox {
+            Button {
+                objectName: "deleteImageDialogConfirmButton"
+                text: qsTr("Delete")
+                palette.buttonText: Colors.error
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "deleteImageDialogCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
         width: 360
         anchors.centerIn: Overlay.overlay
 
@@ -65,11 +77,29 @@ Item {
 
         modal: true
         title: qsTr("Pull image")
-        standardButtons: Dialog.Ok | Dialog.Cancel
         width: 400
         anchors.centerIn: Overlay.overlay
 
-        onAccepted: apiClient.pullImage(pullReferenceField.text.trim())
+        readonly property bool inputValid: pullReferenceField.text.trim().length > 0
+
+        footer: DialogButtonBox {
+            Button {
+                objectName: "pullImageOkButton"
+                text: qsTr("OK")
+                enabled: pullImageDialog.inputValid
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "pullImageCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onAccepted: {
+            if (pullImageDialog.inputValid)
+                apiClient.pullImage(pullReferenceField.text.trim())
+        }
 
         contentItem: ColumnLayout {
             width: pullImageDialog.availableWidth
@@ -84,7 +114,9 @@ Item {
                 id: pullReferenceField
                 objectName: "pullReferenceField"
                 Layout.fillWidth: true
+                focus: true
                 placeholderText: qsTr("e.g. redis:8.6.2")
+                onAccepted: if (pullImageDialog.inputValid) pullImageDialog.accept()
             }
         }
     }
@@ -186,11 +218,29 @@ Item {
 
         modal: true
         title: qsTr("Add tag")
-        standardButtons: Dialog.Ok | Dialog.Cancel
         width: 400
         anchors.centerIn: Overlay.overlay
 
-        onAccepted: apiClient.tagImage(tagImageDialog.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+        readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
+
+        footer: DialogButtonBox {
+            Button {
+                objectName: "tagImageOkButton"
+                text: qsTr("OK")
+                enabled: tagImageDialog.inputValid
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "tagImageCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onAccepted: {
+            if (tagImageDialog.inputValid)
+                apiClient.tagImage(tagImageDialog.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+        }
 
         contentItem: ColumnLayout {
             width: tagImageDialog.availableWidth
@@ -205,6 +255,8 @@ Item {
                 id: tagRepositoryField
                 objectName: "tagRepositoryField"
                 Layout.fillWidth: true
+                focus: true
+                onAccepted: if (tagImageDialog.inputValid) tagImageDialog.accept()
                 placeholderText: qsTr("e.g. myrepo/myimage")
             }
 
@@ -217,6 +269,7 @@ Item {
                 id: tagTagField
                 objectName: "tagTagField"
                 Layout.fillWidth: true
+                onAccepted: if (tagImageDialog.inputValid) tagImageDialog.accept()
                 placeholderText: qsTr("latest")
             }
         }

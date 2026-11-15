@@ -24,7 +24,19 @@ Item {
 
         modal: true
         title: qsTr("Delete volume")
-        standardButtons: Dialog.Yes | Dialog.No
+        footer: DialogButtonBox {
+            Button {
+                objectName: "deleteVolumeDialogConfirmButton"
+                text: qsTr("Delete")
+                palette.buttonText: Colors.error
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "deleteVolumeDialogCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
         width: 360
         anchors.centerIn: Overlay.overlay
 

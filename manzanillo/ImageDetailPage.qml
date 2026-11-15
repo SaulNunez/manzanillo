@@ -25,7 +25,19 @@ Item {
         objectName: "imageDetailDeleteDialog"
         modal: true
         title: qsTr("Delete image")
-        standardButtons: Dialog.Yes | Dialog.No
+        footer: DialogButtonBox {
+            Button {
+                objectName: "imageDetailDeleteDialogConfirmButton"
+                text: qsTr("Delete")
+                palette.buttonText: Colors.error
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "imageDetailDeleteDialogCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
         width: 360
         anchors.centerIn: Overlay.overlay
 
@@ -48,11 +60,29 @@ Item {
         objectName: "imageDetailTagDialog"
         modal: true
         title: qsTr("Add tag")
-        standardButtons: Dialog.Ok | Dialog.Cancel
         width: 400
         anchors.centerIn: Overlay.overlay
 
-        onAccepted: apiClient.tagImage(imageDetailPage.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+        readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
+
+        footer: DialogButtonBox {
+            Button {
+                objectName: "imageDetailTagOkButton"
+                text: qsTr("OK")
+                enabled: tagImageDialog.inputValid
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "imageDetailTagCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onAccepted: {
+            if (tagImageDialog.inputValid)
+                apiClient.tagImage(imageDetailPage.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+        }
 
         contentItem: ColumnLayout {
             width: tagImageDialog.availableWidth
@@ -67,6 +97,8 @@ Item {
                 id: tagRepositoryField
                 objectName: "imageDetailTagRepositoryField"
                 Layout.fillWidth: true
+                focus: true
+                onAccepted: if (tagImageDialog.inputValid) tagImageDialog.accept()
                 placeholderText: qsTr("e.g. myrepo/myimage")
             }
 
@@ -79,6 +111,7 @@ Item {
                 id: tagTagField
                 objectName: "imageDetailTagTagField"
                 Layout.fillWidth: true
+                onAccepted: if (tagImageDialog.inputValid) tagImageDialog.accept()
                 placeholderText: qsTr("latest")
             }
         }
@@ -116,7 +149,10 @@ Item {
             Layout.margins: 12
             spacing: 8
 
+            // Non-destructive actions sit on the left; Delete is pushed to the far
+            // right and tinted so it isn't the same weight as Tag beside it.
             RowLayout {
+                Layout.fillWidth: true
                 spacing: 8
 
                 Button {
@@ -130,9 +166,14 @@ Item {
                     }
                 }
 
+                Item {
+                    Layout.fillWidth: true
+                }
+
                 Button {
                     objectName: "imageDetailDeleteButton"
                     text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
+                    palette.buttonText: Colors.error
                     enabled: !apiClient.imageActionBusy
                     onClicked: deleteImageDialog.open()
                 }
