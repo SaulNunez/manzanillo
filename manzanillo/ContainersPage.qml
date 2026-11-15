@@ -25,6 +25,47 @@ Item {
         expandedProjects = updated
     }
 
+    function isProjectExpanded(project) {
+        return expandedProjects[project] === true
+    }
+
+    // Every container of a Compose project, regardless of the search filter, so the
+    // header summary and Start all / Stop all always cover the whole project.
+    function projectContainers(project) {
+        const containers = []
+        for (const p of apiClient.composeProjects) {
+            if (p.project === project) {
+                for (const service of p.services) {
+                    containers.push(...service.containers)
+                }
+            }
+        }
+        return containers
+    }
+
+    function isContainerBusy(id) {
+        return apiClient.busyContainerIds.indexOf(id) >= 0
+    }
+
+    // Start all / Stop all: act on each container that needs it and isn't already
+    // being worked on; each row then shows its own progress via busyContainerIds and
+    // failures arrive through containerActionErrorOccurred like single actions.
+    function startAllInProject(project) {
+        for (const c of projectContainers(project)) {
+            if (c.state !== "running" && !isContainerBusy(c.id)) {
+                apiClient.startContainer(c.id)
+            }
+        }
+    }
+
+    function stopAllInProject(project) {
+        for (const c of projectContainers(project)) {
+            if (c.state === "running" && !isContainerBusy(c.id)) {
+                apiClient.stopContainer(c.id)
+            }
+        }
+    }
+
     function toggleServiceExpanded(project, service) {
         const key = project + "/" + service
         const updated = Object.assign({}, expandedServices)
@@ -282,11 +323,69 @@ Item {
                                         Layout.fillWidth: true
                                         spacing: 2
 
-                                        RowLayout {
+                                        readonly property var allContainers: {
+                                            apiClient.composeProjects // re-evaluate on refresh
+                                            return containersPage.projectContainers(projectDelegate.modelData.project)
+                                        }
+                                        readonly property int runningCount: projectDelegate.allContainers.filter(c => c.state === "running").length
+                                        readonly property int busyCount: projectDelegate.allContainers.filter(c => apiClient.busyContainerIds.indexOf(c.id) >= 0).length
+                                        readonly property bool canStartAll: projectDelegate.allContainers.some(c => c.state !== "running" && apiClient.busyContainerIds.indexOf(c.id) < 0)
+                                        readonly property bool canStopAll: projectDelegate.allContainers.some(c => c.state === "running" && apiClient.busyContainerIds.indexOf(c.id) < 0)
+                                        readonly property string summary: {
+                                            const running = qsTr("%1/%2 running").arg(projectDelegate.runningCount).arg(projectDelegate.allContainers.length)
+                                            return projectDelegate.busyCount > 0
+                                                ? qsTr("%1, %2 working").arg(running).arg(projectDelegate.busyCount)
+                                                : running
+                                        }
+
+                                        // The whole header toggles the project: click anywhere on it, or
+                                        // Enter/Space (or the accessibility press action) while focused.
+                                        Control {
+                                            id: projectHeader
+                                            objectName: "projectHeader_" + projectDelegate.modelData.project
                                             Layout.fillWidth: true
+                                            activeFocusOnTab: true
+                                            padding: 2
+
+                                            Accessible.role: Accessible.Button
+                                            Accessible.name: qsTr("%1, %2, %3")
+                                                .arg(projectDelegate.modelData.project)
+                                                .arg(projectDelegate.summary)
+                                                .arg(projectDelegate.expanded ? qsTr("expanded") : qsTr("collapsed"))
+                                            Accessible.onPressAction: containersPage.toggleProjectExpanded(projectDelegate.modelData.project)
+
+                                            Keys.onPressed: (event) => {
+                                                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                                                    containersPage.toggleProjectExpanded(projectDelegate.modelData.project)
+                                                    event.accepted = true
+                                                }
+                                            }
+
+                                            background: Rectangle {
+                                                color: "transparent"
+                                                border.color: projectHeader.palette.highlight
+                                                border.width: 2
+                                                visible: projectHeader.activeFocus
+                                            }
+
+                                            contentItem: Item {
+                                                implicitWidth: projectHeaderRow.implicitWidth
+                                                implicitHeight: projectHeaderRow.implicitHeight
+
+                                                // Below the row, so the header's own buttons still get their clicks.
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: containersPage.toggleProjectExpanded(projectDelegate.modelData.project)
+                                                }
+
+                                        RowLayout {
+                                            id: projectHeaderRow
+                                            anchors.fill: parent
 
                                             ToolButton {
                                                 objectName: "projectToggle_" + projectDelegate.index
+                                                focusPolicy: Qt.NoFocus
                                                 text: projectDelegate.expanded ? "▼" : (mirrored ? "◀" : "▶")
                                                 Accessible.name: projectDelegate.expanded
                                                     ? qsTr("Collapse %1").arg(projectDelegate.modelData.project)
@@ -300,7 +399,35 @@ Item {
                                                 text: projectDelegate.modelData.project
                                                 font.weight: Font.DemiBold
                                                 font.pointSize: TypeScale.heading
+                                            }
+
+                                            Label {
+                                                objectName: "projectSummary_" + projectDelegate.modelData.project
+                                                text: projectDelegate.summary
+                                                font.pointSize: TypeScale.caption
+                                                opacity: 0.7
                                                 Layout.fillWidth: true
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Button {
+                                                objectName: "startAllButton_" + projectDelegate.modelData.project
+                                                text: qsTr("Start all")
+                                                focusPolicy: Qt.TabFocus
+                                                enabled: projectDelegate.canStartAll
+                                                Accessible.name: qsTr("Start all containers in %1").arg(projectDelegate.modelData.project)
+                                                onClicked: containersPage.startAllInProject(projectDelegate.modelData.project)
+                                            }
+
+                                            Button {
+                                                objectName: "stopAllButton_" + projectDelegate.modelData.project
+                                                text: qsTr("Stop all")
+                                                focusPolicy: Qt.TabFocus
+                                                enabled: projectDelegate.canStopAll
+                                                Accessible.name: qsTr("Stop all containers in %1").arg(projectDelegate.modelData.project)
+                                                onClicked: containersPage.stopAllInProject(projectDelegate.modelData.project)
+                                            }
+                                        }
                                             }
                                         }
 
