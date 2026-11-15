@@ -10,6 +10,8 @@ import httpx
 from PySide6.QtCore import (
     Property,
     QAbstractListModel,
+    QDateTime,
+    QLocale,
     QModelIndex,
     QObject,
     QSettings,
@@ -36,12 +38,19 @@ def _error_message(error: Exception) -> str:
 
 
 def _format_timestamp(value) -> str:
+    """Docker ISO-8601 string or Unix seconds -> local time in the user's short date/time format."""
     if not value:
         return ""
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M")
-    except ValueError:
-        return str(value)
+    if isinstance(value, (int, float)):
+        seconds = int(value)
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return str(value)
+        seconds = int(parsed.timestamp())
+    moment = QDateTime.fromSecsSinceEpoch(seconds).toLocalTime()
+    return QLocale().toString(moment, QLocale.FormatType.ShortFormat)
 
 
 def _build_context_tar(context_dir: str) -> bytes:
@@ -89,8 +98,7 @@ class ImageListModel(QAbstractListModel):
         if role == self.SizeRole:
             return self._format_size(image.get("Size", 0))
         if role == self.CreatedRole:
-            created = image.get("Created")
-            return datetime.fromtimestamp(created).strftime("%Y-%m-%d %H:%M") if created else ""
+            return _format_timestamp(image.get("Created"))
         if role == self.InUseRole:
             return image.get("Containers", 0) > 0
         return None
@@ -102,12 +110,8 @@ class ImageListModel(QAbstractListModel):
 
     @staticmethod
     def _format_size(num_bytes) -> str:
-        size = float(num_bytes)
-        for unit in ("B", "KB", "MB", "GB", "TB"):
-            if size < 1024:
-                return f"{size:.1f} {unit}"
-            size /= 1024
-        return f"{size:.1f} PB"
+        # Decimal (SI) units, matching how the Docker CLI reports image sizes.
+        return QLocale().formattedDataSize(int(num_bytes or 0), 1, QLocale.DataSizeFormat.DataSizeSIFormat)
 
 
 class ContainerListModel(QAbstractListModel):
