@@ -24,7 +24,19 @@ Item {
         objectName: "volumeDetailDeleteDialog"
         modal: true
         title: qsTr("Delete volume")
-        standardButtons: Dialog.Yes | Dialog.No
+        footer: DialogButtonBox {
+            Button {
+                objectName: "volumeDetailDeleteDialogConfirmButton"
+                text: qsTr("Delete")
+                palette.buttonText: Colors.error
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "volumeDetailDeleteDialogCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
         width: 360
         anchors.centerIn: Overlay.overlay
 
@@ -74,19 +86,27 @@ Item {
             Layout.margins: 12
             spacing: 8
 
+            // Status on the left; Delete is pushed to the far right and tinted so
+            // the destructive action stands apart.
             RowLayout {
+                Layout.fillWidth: true
                 spacing: 8
+
+                StatusBadge {
+                    text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
+                    tint: volumeDetailPage.inUse ? Colors.success : Colors.disabled
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
 
                 Button {
                     objectName: "volumeDetailDeleteButton"
                     text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
                     enabled: !apiClient.volumeActionBusy && !volumeDetailPage.inUse
+                    palette.buttonText: Colors.error
                     onClicked: deleteVolumeDialog.open()
-                }
-
-                StatusBadge {
-                    text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                    tint: volumeDetailPage.inUse ? Colors.success : Colors.disabled
                 }
             }
 
