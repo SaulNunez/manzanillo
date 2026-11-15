@@ -103,11 +103,26 @@ Item {
 
                 Button {
                     objectName: "volumeDetailDeleteButton"
+                    Accessible.description: deleteReasonLabel.visible ? deleteReasonLabel.text : ""
                     text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
                     enabled: !apiClient.volumeActionBusy && !volumeDetailPage.inUse
                     palette.buttonText: Colors.error
                     onClicked: deleteVolumeDialog.open()
                 }
+            }
+
+            // Delete is disabled while the volume is in use; say why in a visible
+            // caption under it (disabled buttons get no hover or keyboard focus).
+            Label {
+                id: deleteReasonLabel
+                objectName: "volumeDetailDeleteReason"
+                visible: volumeDetailPage.inUse
+                text: qsTr("In use by a container — remove the container first")
+                font.pixelSize: TypeScale.caption
+                opacity: 0.7
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignRight
+                Layout.fillWidth: true
             }
 
             RowLayout {

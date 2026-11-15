@@ -168,10 +168,14 @@ Item {
                             title: volumeRowDelegate.name
                             statusText: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
                             statusTint: volumeRowDelegate.inUse ? Colors.success : Colors.disabled
+                            // Delete is disabled while the volume is in use; say why in a
+                            // visible caption (disabled buttons get no hover or focus).
+                            readonly property string deleteDisabledReason: volumeRowDelegate.inUse
+                                ? qsTr("In use by a container — remove the container first") : ""
                             details: [
                                 qsTr("Driver: %1    Created: %2").arg(volumeRowDelegate.driver).arg(volumeRowDelegate.created),
                                 volumeRowDelegate.mountpoint
-                            ]
+                            ].concat(volumeRowDelegate.deleteDisabledReason.length > 0 ? [volumeRowDelegate.deleteDisabledReason] : [])
                             showFocusRing: volumeRowDelegate.ListView.isCurrentItem && volumesList.activeFocus
                             onActivated: {
                                 volumesList.currentIndex = volumeRowDelegate.index
@@ -180,6 +184,7 @@ Item {
 
                             Button {
                                 objectName: "deleteVolumeButton_" + volumeRowDelegate.name
+                                Accessible.description: volumeRowDelegate.deleteDisabledReason
                                 text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
                                 enabled: !apiClient.volumeActionBusy && !volumeRowDelegate.inUse
                                 onClicked: volumesPage.confirmDeleteVolume(volumeRowDelegate.name)
