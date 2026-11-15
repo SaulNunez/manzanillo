@@ -82,3 +82,8 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 /.qtcreator/
+
+# Python virtualenv and test caches
+.venv/
+__pycache__/
+.pytest_cache/
