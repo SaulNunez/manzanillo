@@ -408,7 +408,12 @@ Item {
                             title: imageRowDelegate.tags
                             statusText: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
                             statusTint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
+                            // Delete is disabled while the image is in use; say why in a
+                            // visible caption (disabled buttons get no hover or focus).
+                            readonly property string deleteDisabledReason: imageRowDelegate.inUse
+                                ? qsTr("In use by a container — remove the container first") : ""
                             details: [qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)]
+                                .concat(imageRowDelegate.deleteDisabledReason.length > 0 ? [imageRowDelegate.deleteDisabledReason] : [])
                             showFocusRing: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
                             onActivated: {
                                 imagesList.currentIndex = imageRowDelegate.index
@@ -427,6 +432,7 @@ Item {
 
                                 Button {
                                     objectName: "deleteImageButton_" + imageRowDelegate.imageId
+                                    Accessible.description: imageRowDelegate.deleteDisabledReason
                                     text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
                                     enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
                                     onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
