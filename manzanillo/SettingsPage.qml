@@ -4,9 +4,18 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Item {
+    // True between clicking Save and the client confirming the new path.
+    property bool savePending: false
+
     Connections {
         target: apiClient
-        function onSocketPathChanged(path) { socketField.text = path }
+        function onSocketPathChanged(path) {
+            socketField.text = path
+            if (savePending) {
+                savePending = false
+                saveStatusLabel.text = qsTr("✓ Saved. Using the new socket path.")
+            }
+        }
         function onConnectionTestSucceeded(version) {
             testResultLabel.color = Colors.success
             testResultLabel.text = qsTr("Connected. Docker version: %1").arg(version)
@@ -43,22 +52,6 @@ Item {
                     font.pixelSize: TypeScale.title
                     Layout.fillWidth: true
                 }
-
-                ToolButton {
-                    objectName: "saveSocketPathButton"
-                    icon.name: "document-save"
-                    text: qsTr("Save")
-                    enabled: socketField.text.length > 0
-                    onClicked: apiClient.setSocketPath(socketField.text)
-                }
-
-                ToolButton {
-                    objectName: "testConnectionButton"
-                    icon.name: "network-connect"
-                    text: apiClient.connectionTestBusy ? qsTr("Testing...") : qsTr("Test Connection")
-                    enabled: !apiClient.connectionTestBusy
-                    onClicked: apiClient.testConnection()
-                }
             }
         }
 
@@ -73,16 +66,51 @@ Item {
                 font.bold: true
             }
 
-            TextField {
-                id: socketField
-                objectName: "socketField"
+            RowLayout {
                 Layout.fillWidth: true
-                text: apiClient.socketPath
-                placeholderText: qsTr("/var/run/docker.sock")
+                spacing: 8
+
+                TextField {
+                    id: socketField
+                    objectName: "socketField"
+                    Layout.fillWidth: true
+                    text: apiClient.socketPath
+                    placeholderText: qsTr("/var/run/docker.sock")
+                    onTextChanged: if (text !== apiClient.socketPath) saveStatusLabel.text = ""
+                }
+
+                Button {
+                    objectName: "saveSocketPathButton"
+                    icon.name: "document-save"
+                    text: qsTr("Save")
+                    enabled: socketField.text.length > 0 && socketField.text !== apiClient.socketPath
+                    onClicked: {
+                        savePending = true
+                        apiClient.setSocketPath(socketField.text)
+                    }
+                }
+
+                Button {
+                    objectName: "testConnectionButton"
+                    icon.name: "network-connect"
+                    text: apiClient.connectionTestBusy ? qsTr("Testing...") : qsTr("Test Connection")
+                    enabled: !apiClient.connectionTestBusy
+                    onClicked: apiClient.testConnection()
+                }
+            }
+
+            Label {
+                id: saveStatusLabel
+                objectName: "saveStatusLabel"
+                color: Colors.success
+                visible: text.length > 0
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
             }
 
             Label {
                 id: testResultLabel
+                objectName: "testResultLabel"
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }

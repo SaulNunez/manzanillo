@@ -5,13 +5,15 @@
 - ``qml_warnings``: autouse; fails any test during which QML logged a warning.
 - ``load_qml``: load any QML file/component with the fake as ``apiClient``.
 - ``main_window``: the full app (Main.qml) loaded with the fake.
+- ``user_locale``: pins the default QLocale and TZ (UTC) for formatting tests.
 """
 import os
+import time
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest  # noqa: E402
-from PySide6.QtCore import QUrl, qInstallMessageHandler  # noqa: E402
+from PySide6.QtCore import QLocale, QUrl, qInstallMessageHandler  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuickControls2 import QQuickStyle  # noqa: E402
 
@@ -81,3 +83,19 @@ def load_qml(qapp, qtbot, fake_api_client):
 def main_window(load_qml):
     """The whole app: manzanillo/Main.qml loaded with a FakeApiClient."""
     return load_qml(("manzanillo", "Main"))
+
+
+@pytest.fixture
+def user_locale(monkeypatch):
+    """Pin the "system" locale and time zone; returns ``use(locale_name)``."""
+    previous = QLocale()
+    monkeypatch.setenv("TZ", "UTC")
+    time.tzset()
+
+    def use(name):
+        QLocale.setDefault(QLocale(name))
+
+    yield use
+    QLocale.setDefault(previous)
+    monkeypatch.undo()
+    time.tzset()

@@ -22,15 +22,17 @@ def rows(model):
     ]
 
 
-def test_image_model_exposes_short_id_tags_and_size():
+def test_image_model_exposes_short_id_tags_size_and_created(user_locale):
+    user_locale("en_US")
     model = ImageListModel()
     model.set_images([
         {"Id": "sha256:0123456789abcdef", "RepoTags": ["nginx:latest", "web:1"],
-         "Size": 2048, "Created": 0, "Containers": 1},
+         "Size": 2048, "Created": 1709647679, "Containers": 1},
     ])
     [row] = rows(model)
     assert row["tags"] == "nginx:latest, web:1"
-    assert row["size"] == "2.0 KB"
+    assert row["size"] == "2.0 kB"
+    assert row["created"] == "3/5/24 2:07\u202fPM"
     assert row["inUse"] is True
 
 
