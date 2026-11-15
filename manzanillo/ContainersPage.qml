@@ -218,6 +218,7 @@ Item {
                                     required property string image
                                     required property string status
                                     required property string state
+                                    readonly property bool busy: apiClient.busyContainerIds.indexOf(containerRowDelegate.containerId) >= 0
                                     objectName: "containerRow_" + containerRowDelegate.containerId
                                     width: containersList.width
                                     title: containerRowDelegate.names
@@ -235,10 +236,10 @@ Item {
 
                                     Button {
                                         objectName: "quickActionButton_" + containerRowDelegate.containerId
-                                        text: apiClient.containerActionBusy
+                                        text: containerRowDelegate.busy
                                             ? qsTr("Working...")
                                             : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                        enabled: !apiClient.containerActionBusy
+                                        enabled: !containerRowDelegate.busy
                                         onClicked: containerRowDelegate.state === "running"
                                             ? apiClient.stopContainer(containerRowDelegate.containerId)
                                             : apiClient.startContainer(containerRowDelegate.containerId)
@@ -360,6 +361,7 @@ Item {
                                                             delegate: RowCard {
                                                                 id: containerDelegate
                                                                 required property var modelData
+                                                                readonly property bool busy: apiClient.busyContainerIds.indexOf(containerDelegate.modelData.id) >= 0
                                                                 objectName: "composeContainerRow_" + containerDelegate.modelData.id
                                                                 Layout.fillWidth: true
                                                                 activeFocusOnTab: true
@@ -374,10 +376,10 @@ Item {
 
                                                                 Button {
                                                                     objectName: "quickActionButton_" + containerDelegate.modelData.id
-                                                                    text: apiClient.containerActionBusy
+                                                                    text: containerDelegate.busy
                                                                         ? qsTr("Working...")
                                                                         : (containerDelegate.modelData.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                                                    enabled: !apiClient.containerActionBusy
+                                                                    enabled: !containerDelegate.busy
                                                                     onClicked: containerDelegate.modelData.state === "running"
                                                                         ? apiClient.stopContainer(containerDelegate.modelData.id)
                                                                         : apiClient.startContainer(containerDelegate.modelData.id)

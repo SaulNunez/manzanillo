@@ -369,6 +369,13 @@ class VolumeListModel(QAbstractListModel):
         self.endResetModel()
 
 
+def _mark_busy(busy: set, key: str, value: bool, changed):
+    """Add/remove ``key`` in a per-item busy set, emitting ``changed`` if it changed."""
+    if (key in busy) != value:
+        (busy.add if value else busy.discard)(key)
+        changed.emit()
+
+
 class ApiClient(QObject):
     containersErrorOccurred = Signal(str)
     containersBusyChanged = Signal()
@@ -378,7 +385,7 @@ class ApiClient(QObject):
     containerDetailBusyChanged = Signal()
     containerDetailErrorOccurred = Signal(str)
 
-    containerActionBusyChanged = Signal()
+    busyContainerIdsChanged = Signal()
     containerActionErrorOccurred = Signal(str)
 
     containerLogsChanged = Signal()
@@ -393,6 +400,7 @@ class ApiClient(QObject):
     imageDetailErrorOccurred = Signal(str)
 
     imageActionBusyChanged = Signal()
+    busyImageIdsChanged = Signal()
     imageActionErrorOccurred = Signal(str)
     buildLogChanged = Signal()
 
@@ -403,7 +411,7 @@ class ApiClient(QObject):
     volumeDetailBusyChanged = Signal()
     volumeDetailErrorOccurred = Signal(str)
 
-    volumeActionBusyChanged = Signal()
+    busyVolumeNamesChanged = Signal()
     volumeActionErrorOccurred = Signal(str)
 
     socketPathChanged = Signal(str)
@@ -421,16 +429,19 @@ class ApiClient(QObject):
         self._volumes_busy = False
         self._connection_test_busy = False
         self._container_detail_busy = False
-        self._container_action_busy = False
+        # Row actions are tracked per item (container id / image id / volume name)
+        # so only the row being acted on shows "Working..." (audit W1).
+        self._busy_container_ids = set()
         self._container_logs = ""
         self._container_logs_streaming = False
         self._container_logs_task = None
-        self._volume_action_busy = False
+        self._busy_volume_names = set()
         self._volume_detail_busy = False
         self._volume_detail = {}
         self._image_detail_busy = False
         self._image_detail = {}
         self._image_action_busy = False
+        self._busy_image_ids = set()
         self._build_log = ""
         self._containers_model = ContainerListModel(self)
         self._containers_filter_model = ContainerFilterProxyModel(self)
@@ -589,14 +600,10 @@ class ApiClient(QObject):
         finally:
             self._set_container_detail_busy(False)
 
-    @Property(bool, notify=containerActionBusyChanged)
-    def containerActionBusy(self):
-        return self._container_action_busy
-
-    def _set_container_action_busy(self, value: bool):
-        if self._container_action_busy != value:
-            self._container_action_busy = value
-            self.containerActionBusyChanged.emit()
+    @Property("QVariant", notify=busyContainerIdsChanged)
+    def busyContainerIds(self):
+        """Short (12-char) ids of containers with a start/stop in flight."""
+        return sorted(self._busy_container_ids)
 
     @Slot(str)
     def startContainer(self, container_id: str):
@@ -607,7 +614,9 @@ class ApiClient(QObject):
         asyncio.ensure_future(self._container_action(container_id, "stop"))
 
     async def _container_action(self, container_id: str, action: str):
-        self._set_container_action_busy(True)
+        # Rows use short ids and the detail page the full one; key on the short form.
+        busy_key = container_id[:12]
+        _mark_busy(self._busy_container_ids, busy_key, True, self.busyContainerIdsChanged)
         try:
             # Docker's default stop grace period (SIGTERM, then SIGKILL after 10s)
             # can exceed the client's normal 5s timeout, so allow more time here.
@@ -618,7 +627,7 @@ class ApiClient(QObject):
         except (httpx.HTTPError, OSError) as error:
             self.containerActionErrorOccurred.emit(_error_message(error))
         finally:
-            self._set_container_action_busy(False)
+            _mark_busy(self._busy_container_ids, busy_key, False, self.busyContainerIdsChanged)
 
     @Property(str, notify=containerLogsChanged)
     def containerLogs(self):
@@ -742,6 +751,11 @@ class ApiClient(QObject):
             self._image_action_busy = value
             self.imageActionBusyChanged.emit()
 
+    @Property("QVariant", notify=busyImageIdsChanged)
+    def busyImageIds(self):
+        """Ids of images with a delete or tag in flight. Pull/build use imageActionBusy."""
+        return sorted(self._busy_image_ids)
+
     @Property(str, notify=buildLogChanged)
     def buildLog(self):
         return self._build_log
@@ -757,7 +771,7 @@ class ApiClient(QObject):
         asyncio.ensure_future(self._delete_image(image_id))
 
     async def _delete_image(self, image_id: str):
-        self._set_image_action_busy(True)
+        _mark_busy(self._busy_image_ids, image_id, True, self.busyImageIdsChanged)
         try:
             response = await self._client.delete(f"/images/{image_id}")
             response.raise_for_status()
@@ -765,7 +779,7 @@ class ApiClient(QObject):
         except (httpx.HTTPError, OSError) as error:
             self.imageActionErrorOccurred.emit(_error_message(error))
         finally:
-            self._set_image_action_busy(False)
+            _mark_busy(self._busy_image_ids, image_id, False, self.busyImageIdsChanged)
 
     @Slot(str)
     def pullImage(self, reference: str):
@@ -804,7 +818,7 @@ class ApiClient(QObject):
         asyncio.ensure_future(self._tag_image(image_id, repository, tag))
 
     async def _tag_image(self, image_id: str, repository: str, tag: str):
-        self._set_image_action_busy(True)
+        _mark_busy(self._busy_image_ids, image_id, True, self.busyImageIdsChanged)
         try:
             params = {"repo": repository}
             if tag:
@@ -816,7 +830,7 @@ class ApiClient(QObject):
         except (httpx.HTTPError, OSError) as error:
             self.imageActionErrorOccurred.emit(_error_message(error))
         finally:
-            self._set_image_action_busy(False)
+            _mark_busy(self._busy_image_ids, image_id, False, self.busyImageIdsChanged)
 
     @Slot(str, str, str)
     def buildImage(self, context_path: str, dockerfile: str, tag: str):
@@ -922,21 +936,17 @@ class ApiClient(QObject):
         finally:
             self._set_volume_detail_busy(False)
 
-    @Property(bool, notify=volumeActionBusyChanged)
-    def volumeActionBusy(self):
-        return self._volume_action_busy
-
-    def _set_volume_action_busy(self, value: bool):
-        if self._volume_action_busy != value:
-            self._volume_action_busy = value
-            self.volumeActionBusyChanged.emit()
+    @Property("QVariant", notify=busyVolumeNamesChanged)
+    def busyVolumeNames(self):
+        """Names of volumes with a delete in flight."""
+        return sorted(self._busy_volume_names)
 
     @Slot(str)
     def deleteVolume(self, name: str):
         asyncio.ensure_future(self._delete_volume(name))
 
     async def _delete_volume(self, name: str):
-        self._set_volume_action_busy(True)
+        _mark_busy(self._busy_volume_names, name, True, self.busyVolumeNamesChanged)
         try:
             response = await self._client.delete(f"/volumes/{name}")
             response.raise_for_status()
@@ -944,7 +954,7 @@ class ApiClient(QObject):
         except (httpx.HTTPError, OSError) as error:
             self.volumeActionErrorOccurred.emit(_error_message(error))
         finally:
-            self._set_volume_action_busy(False)
+            _mark_busy(self._busy_volume_names, name, False, self.busyVolumeNamesChanged)
 
     async def close(self):
         await self._client.aclose()
