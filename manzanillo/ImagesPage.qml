@@ -493,7 +493,7 @@ Item {
                                             width: parent.width
                                             text: imageRowDelegate.deleteDisabledReason
                                             wrapMode: Text.WordWrap
-                                            font.pixelSize: TypeScale.caption
+                                            font.pointSize: TypeScale.caption
                                             opacity: 0.7
                                             leftPadding: 12
                                             rightPadding: 12
