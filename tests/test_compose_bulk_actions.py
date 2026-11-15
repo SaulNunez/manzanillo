@@ -135,14 +135,14 @@ def test_bulk_action_progress_shows_per_container_and_on_the_header(main_window,
     assert stops == [("stopContainer", RUNNING_B)]
 
 
-def test_bulk_action_errors_show_in_the_page_error_label(main_window, qtbot):
+def test_bulk_action_errors_show_in_the_page_error_banner(main_window, qtbot):
     show_shop(main_window, qtbot)
     find_item(main_window.window, "startAllButton_shop").clicked.emit()
 
     main_window.fake.containerActionErrorOccurred.emit("cannot start shop-c")
     qtbot.wait(10)
 
-    label = find_item(main_window.window, "containersErrorLabel")
+    label = find_item(main_window.window, "containersErrorBanner")
     assert label.property("visible") is True
     assert label.property("text") == "cannot start shop-c"
 
