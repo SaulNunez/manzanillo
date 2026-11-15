@@ -399,10 +399,14 @@ Item {
                         Accessible.name: qsTr("Images")
 
                         // Keyboard equivalent of tapping a row: arrow keys move currentIndex
-                        // (built into ListView), Enter/Return/Space opens its detail page.
+                        // (built into ListView), Enter/Return/Space opens its detail page and
+                        // the Menu key opens its ⋯ actions menu.
                         Keys.onPressed: (event) => {
                             if (currentItem && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
                                 imagesPage.openImageDetail(currentItem.imageId, currentItem.tags, currentItem.inUse)
+                                event.accepted = true
+                            } else if (currentItem && event.key === Qt.Key_Menu) {
+                                currentItem.openActions()
                                 event.accepted = true
                             }
                         }
@@ -432,22 +436,62 @@ Item {
                                 imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags, imageRowDelegate.inUse)
                             }
 
-                            ColumnLayout {
-                                spacing: 4
+                            // Secondary actions live in a ⋯ menu so opening the image stays
+                            // the row's primary action.
+                            function openActions() {
+                                imageActionsMenu.popup(imageActionsButton, 0, imageActionsButton.height)
+                            }
 
-                                Button {
-                                    objectName: "tagImageButton_" + imageRowDelegate.imageId
-                                    text: qsTr("Tag")
-                                    enabled: !apiClient.imageActionBusy
-                                    onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
-                                }
+                            ToolButton {
+                                id: imageActionsButton
+                                objectName: "imageActionsButton_" + imageRowDelegate.imageId
+                                text: "⋯"
+                                focusPolicy: Qt.StrongFocus
+                                Accessible.name: qsTr("Actions for %1").arg(imageRowDelegate.tags)
+                                ToolTip.visible: hovered
+                                ToolTip.text: qsTr("More actions")
+                                onClicked: imageRowDelegate.openActions()
 
-                                Button {
-                                    objectName: "deleteImageButton_" + imageRowDelegate.imageId
-                                    Accessible.description: imageRowDelegate.deleteDisabledReason
-                                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                    enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
-                                    onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
+                                Menu {
+                                    id: imageActionsMenu
+                                    objectName: "imageActionsMenu_" + imageRowDelegate.imageId
+
+                                    MenuItem {
+                                        objectName: "tagImageButton_" + imageRowDelegate.imageId
+                                        text: qsTr("Tag")
+                                        enabled: !apiClient.imageActionBusy
+                                        onTriggered: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
+                                    }
+
+                                    MenuItem {
+                                        objectName: "deleteImageButton_" + imageRowDelegate.imageId
+                                        Accessible.description: imageRowDelegate.deleteDisabledReason
+                                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
+                                        enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
+                                        onTriggered: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
+                                    }
+
+                                    // Disabled menu items get no hover or focus, so say why
+                                    // Delete is unavailable right under it.
+                                    // (Wrapped in an Item so it takes no space when hidden.)
+                                    Item {
+                                        visible: imageRowDelegate.deleteDisabledReason.length > 0
+                                        implicitWidth: deleteReasonLabel.implicitWidth
+                                        implicitHeight: visible ? deleteReasonLabel.implicitHeight : 0
+
+                                        Label {
+                                            id: deleteReasonLabel
+                                            objectName: "imageDeleteReason_" + imageRowDelegate.imageId
+                                            width: parent.width
+                                            text: imageRowDelegate.deleteDisabledReason
+                                            wrapMode: Text.WordWrap
+                                            font.pixelSize: TypeScale.caption
+                                            opacity: 0.7
+                                            leftPadding: 12
+                                            rightPadding: 12
+                                            bottomPadding: 4
+                                        }
+                                    }
                                 }
                             }
                         }
