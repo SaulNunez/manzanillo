@@ -6,7 +6,7 @@ Item {
     id: containerDetailPage
     required property string containerId
     // Busy only while this container's own start/stop is in flight (keyed by short id).
-    readonly property bool actionBusy: apiClient.busyContainerIds.indexOf(containerDetailPage.containerId.substring(0, 12)) >= 0
+    readonly property bool actionBusy: Busy.container(containerDetailPage.containerId)
 
     Component.onCompleted: apiClient.fetchContainerDetail(containerDetailPage.containerId)
     // Belt-and-suspenders alongside the tab-switch handler below - guarantees the

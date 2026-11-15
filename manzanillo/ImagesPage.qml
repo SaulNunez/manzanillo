@@ -388,7 +388,7 @@ Item {
                             required property string size
                             required property string created
                             required property bool inUse
-                            readonly property bool busy: apiClient.busyImageIds.indexOf(imageRowDelegate.imageId) >= 0
+                            readonly property bool busy: Busy.image(imageRowDelegate.imageId)
                             objectName: "imageRow_" + imageRowDelegate.imageId
                             width: imagesList.width
                             title: imageRowDelegate.tags

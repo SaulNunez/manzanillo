@@ -44,7 +44,7 @@ Item {
     }
 
     function isContainerBusy(id) {
-        return apiClient.busyContainerIds.indexOf(id) >= 0
+        return Busy.container(id)
     }
 
     // Start all / Stop all: act on each container that needs it and isn't already
@@ -252,7 +252,7 @@ Item {
                                     required property string image
                                     required property string status
                                     required property string state
-                                    readonly property bool busy: apiClient.busyContainerIds.indexOf(containerRowDelegate.containerId) >= 0
+                                    readonly property bool busy: containersPage.isContainerBusy(containerRowDelegate.containerId)
                                     objectName: "containerRow_" + containerRowDelegate.containerId
                                     width: containersList.width
                                     title: containerRowDelegate.names
@@ -268,15 +268,11 @@ Item {
                                         containersPage.openContainerDetail(containerRowDelegate.containerId)
                                     }
 
-                                    Button {
+                                    StartStopButton {
                                         objectName: "quickActionButton_" + containerRowDelegate.containerId
-                                        text: containerRowDelegate.busy
-                                            ? qsTr("Working...")
-                                            : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                        enabled: !containerRowDelegate.busy
-                                        onClicked: containerRowDelegate.state === "running"
-                                            ? apiClient.stopContainer(containerRowDelegate.containerId)
-                                            : apiClient.startContainer(containerRowDelegate.containerId)
+                                        containerId: containerRowDelegate.containerId
+                                        containerState: containerRowDelegate.state
+                                        busy: containerRowDelegate.busy
                                     }
                                 }
                             }
@@ -328,9 +324,9 @@ Item {
                                             return containersPage.projectContainers(projectDelegate.modelData.project)
                                         }
                                         readonly property int runningCount: projectDelegate.allContainers.filter(c => c.state === "running").length
-                                        readonly property int busyCount: projectDelegate.allContainers.filter(c => apiClient.busyContainerIds.indexOf(c.id) >= 0).length
-                                        readonly property bool canStartAll: projectDelegate.allContainers.some(c => c.state !== "running" && apiClient.busyContainerIds.indexOf(c.id) < 0)
-                                        readonly property bool canStopAll: projectDelegate.allContainers.some(c => c.state === "running" && apiClient.busyContainerIds.indexOf(c.id) < 0)
+                                        readonly property int busyCount: projectDelegate.allContainers.filter(c => containersPage.isContainerBusy(c.id)).length
+                                        readonly property bool canStartAll: projectDelegate.allContainers.some(c => c.state !== "running" && !containersPage.isContainerBusy(c.id))
+                                        readonly property bool canStopAll: projectDelegate.allContainers.some(c => c.state === "running" && !containersPage.isContainerBusy(c.id))
                                         readonly property string summary: {
                                             const running = qsTr("%1/%2 running").arg(projectDelegate.runningCount).arg(projectDelegate.allContainers.length)
                                             return projectDelegate.busyCount > 0
@@ -483,7 +479,7 @@ Item {
                                                             delegate: RowCard {
                                                                 id: containerDelegate
                                                                 required property var modelData
-                                                                readonly property bool busy: apiClient.busyContainerIds.indexOf(containerDelegate.modelData.id) >= 0
+                                                                readonly property bool busy: containersPage.isContainerBusy(containerDelegate.modelData.id)
                                                                 objectName: "composeContainerRow_" + containerDelegate.modelData.id
                                                                 Layout.fillWidth: true
                                                                 activeFocusOnTab: true
@@ -496,15 +492,11 @@ Item {
                                                                 ]
                                                                 onActivated: containersPage.openContainerDetail(containerDelegate.modelData.id)
 
-                                                                Button {
+                                                                StartStopButton {
                                                                     objectName: "quickActionButton_" + containerDelegate.modelData.id
-                                                                    text: containerDelegate.busy
-                                                                        ? qsTr("Working...")
-                                                                        : (containerDelegate.modelData.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                                                    enabled: !containerDelegate.busy
-                                                                    onClicked: containerDelegate.modelData.state === "running"
-                                                                        ? apiClient.stopContainer(containerDelegate.modelData.id)
-                                                                        : apiClient.startContainer(containerDelegate.modelData.id)
+                                                                    containerId: containerDelegate.modelData.id
+                                                                    containerState: containerDelegate.modelData.state
+                                                                    busy: containerDelegate.busy
                                                                 }
                                                             }
                                                         }

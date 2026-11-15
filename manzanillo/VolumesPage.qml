@@ -148,7 +148,7 @@ Item {
                             required property string mountpoint
                             required property string created
                             required property bool inUse
-                            readonly property bool busy: apiClient.busyVolumeNames.indexOf(volumeRowDelegate.name) >= 0
+                            readonly property bool busy: Busy.volume(volumeRowDelegate.name)
                             objectName: "volumeRow_" + volumeRowDelegate.name
                             width: volumesList.width
                             title: volumeRowDelegate.name

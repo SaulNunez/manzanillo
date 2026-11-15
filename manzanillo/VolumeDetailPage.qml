@@ -6,7 +6,7 @@ Item {
     id: volumeDetailPage
     required property string volumeName
     // Busy only while this volume's own delete is in flight.
-    readonly property bool actionBusy: apiClient.busyVolumeNames.indexOf(volumeDetailPage.volumeName) >= 0
+    readonly property bool actionBusy: Busy.volume(volumeDetailPage.volumeName)
     required property bool inUse
 
     Component.onCompleted: apiClient.fetchVolumeDetail(volumeDetailPage.volumeName)

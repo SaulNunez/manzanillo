@@ -6,7 +6,7 @@ Item {
     id: imageDetailPage
     required property string imageId
     // Busy only while this image's own delete/tag is in flight.
-    readonly property bool actionBusy: apiClient.busyImageIds.indexOf(imageDetailPage.imageId) >= 0
+    readonly property bool actionBusy: Busy.image(imageDetailPage.imageId)
     required property string tags
     required property bool inUse
 
