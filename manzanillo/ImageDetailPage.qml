@@ -173,11 +173,26 @@ Item {
 
                 Button {
                     objectName: "imageDetailDeleteButton"
+                    Accessible.description: deleteReasonLabel.visible ? deleteReasonLabel.text : ""
                     text: imageDetailPage.actionBusy ? qsTr("Working...") : qsTr("Delete")
                     palette.buttonText: Colors.danger
-                    enabled: !imageDetailPage.actionBusy
+                    enabled: !imageDetailPage.actionBusy && !imageDetailPage.inUse
                     onClicked: deleteImageDialog.open()
                 }
+            }
+
+            // Delete is disabled while the image is in use; say why in a visible
+            // caption under it (disabled buttons get no hover or keyboard focus).
+            Label {
+                id: deleteReasonLabel
+                objectName: "imageDetailDeleteReason"
+                visible: imageDetailPage.inUse
+                text: qsTr("In use by a container — remove the container first")
+                font.pointSize: TypeScale.caption
+                opacity: 0.7
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignRight
+                Layout.fillWidth: true
             }
 
             RowLayout {

@@ -115,3 +115,29 @@ def test_unused_volume_detail_shows_no_reason(main_window, qtbot):
     assert button.property("enabled")
     assert REASON not in visible_texts(page)
     assert REASON not in accessible_description(button)
+
+
+def show_image_detail(main_window, qtbot, in_use):
+    show_page(main_window, qtbot, 1)
+    stack = find(main_window.window, "imageStack")
+    call_qml(stack.parentItem(), "openImageDetail", "sha256:abc", "nginx:latest", in_use)
+    qtbot.waitUntil(lambda: stack.property("depth") == 2)
+    return stack.property("currentItem")
+
+
+def test_in_use_image_detail_explains_disabled_delete(main_window, qtbot):
+    page = show_image_detail(main_window, qtbot, in_use=True)
+    button = find(main_window.window, "imageDetailDeleteButton")
+
+    assert not button.property("enabled")
+    assert REASON in visible_texts(page)
+    assert REASON in accessible_description(button)
+
+
+def test_unused_image_detail_shows_no_reason(main_window, qtbot):
+    page = show_image_detail(main_window, qtbot, in_use=False)
+    button = find(main_window.window, "imageDetailDeleteButton")
+
+    assert button.property("enabled")
+    assert REASON not in visible_texts(page)
+    assert REASON not in accessible_description(button)
