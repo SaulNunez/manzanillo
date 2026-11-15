@@ -64,7 +64,7 @@ Item {
         return projects
     }
 
-    StackView {
+    PageStack {
         id: containerStack
         objectName: "containerStack"
         anchors.fill: parent
@@ -138,17 +138,33 @@ Item {
                         }
                     }
 
-                    Label {
-                        text: qsTr("Search")
-                        font.pixelSize: TypeScale.caption
+                    // Ctrl+F (platform Find) jumps to search, but only while this list is
+                    // what's on screen - not from another nav page or a pushed detail page.
+                    Shortcut {
+                        sequences: [StandardKey.Find]
+                        enabled: searchField.visible
+                        onActivated: {
+                            searchField.forceActiveFocus(Qt.ShortcutFocusReason)
+                            searchField.selectAll()
+                        }
                     }
 
                     TextField {
                         id: searchField
                         objectName: "containerSearchField"
                         Layout.fillWidth: true
-                        placeholderText: qsTr("Search containers by name or image…")
+                        placeholderText: qsTr("Search containers by name or image… (Ctrl+F)")
                         Accessible.name: qsTr("Search containers by name or image")
+                        // Esc clears a non-empty query; when already empty the key is left
+                        // unaccepted so window-level Esc handling still sees it.
+                        Keys.onEscapePressed: (event) => {
+                            if (text.length > 0) {
+                                clear()
+                                event.accepted = true
+                            } else {
+                                event.accepted = false
+                            }
+                        }
                         onTextChanged: {
                             apiClient.filteredContainersModel.setFilterText(text)
                             containersPage.searchText = text

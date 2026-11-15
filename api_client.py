@@ -24,6 +24,7 @@ from PySide6.QtCore import (
 SETTINGS_ORG = "manzanillo"
 SETTINGS_APP = "manzanillo"
 SOCKET_PATH_SETTING_KEY = "socketPath"
+REDUCE_MOTION_SETTING_KEY = "reduceMotion"
 
 
 def _error_message(error: Exception) -> str:
@@ -411,6 +412,8 @@ class ApiClient(QObject):
     connectionTestSucceeded = Signal(str)
     connectionTestFailed = Signal(str)
 
+    reduceMotionChanged = Signal()
+
     def __init__(self, socket_path: str, base_url: str = "http://localhost", parent=None):
         super().__init__(parent)
         self._base_url = base_url
@@ -439,6 +442,8 @@ class ApiClient(QObject):
         self._volumes_model = VolumeListModel(self)
         self._compose_projects = []
         self._container_detail = {}
+        settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
+        self._reduce_motion = settings.value(REDUCE_MOTION_SETTING_KEY, False, type=bool)
 
     def _build_client(self, socket_path: str) -> httpx.AsyncClient:
         transport = httpx.AsyncHTTPTransport(uds=socket_path)
@@ -470,6 +475,20 @@ class ApiClient(QObject):
         asyncio.ensure_future(self._fetch_volumes())
 
         await old_client.aclose()
+
+    # UI preference: when true, page transitions are instant. Lives here (rather
+    # than in QML) so it persists in the same QSettings store as the socket path.
+    @Property(bool, notify=reduceMotionChanged)
+    def reduceMotion(self):
+        return self._reduce_motion
+
+    @Slot(bool)
+    def setReduceMotion(self, enabled: bool):
+        if enabled == self._reduce_motion:
+            return
+        self._reduce_motion = enabled
+        QSettings(SETTINGS_ORG, SETTINGS_APP).setValue(REDUCE_MOTION_SETTING_KEY, enabled)
+        self.reduceMotionChanged.emit()
 
     @Property(bool, notify=connectionTestBusyChanged)
     def connectionTestBusy(self):

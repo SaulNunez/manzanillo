@@ -49,7 +49,7 @@ Item {
         }
     }
 
-    StackView {
+    PageStack {
         id: volumeStack
         objectName: "volumeStack"
         anchors.fill: parent

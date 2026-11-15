@@ -275,7 +275,7 @@ Item {
         }
     }
 
-    StackView {
+    PageStack {
         id: imageStack
         objectName: "imageStack"
         anchors.fill: parent
