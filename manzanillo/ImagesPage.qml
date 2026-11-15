@@ -59,7 +59,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: 360
+        width: Math.min(360, Overlay.overlay.width - 32)
         anchors.centerIn: Overlay.overlay
 
         onAccepted: apiClient.deleteImage(deleteImageDialog.imageId)
@@ -77,7 +77,7 @@ Item {
 
         modal: true
         title: qsTr("Pull image")
-        width: 400
+        width: Math.min(400, Overlay.overlay.width - 32)
         anchors.centerIn: Overlay.overlay
 
         readonly property bool inputValid: pullReferenceField.text.trim().length > 0
@@ -130,7 +130,7 @@ Item {
         // Only a Close button - building doesn't close the dialog, since the log
         // view needs to stay visible while the build streams in.
         standardButtons: Dialog.Close
-        width: 480
+        width: Math.min(480, Overlay.overlay.width - 32)
         anchors.centerIn: Overlay.overlay
 
         contentItem: ColumnLayout {
@@ -218,7 +218,7 @@ Item {
 
         modal: true
         title: qsTr("Add tag")
-        width: 400
+        width: Math.min(400, Overlay.overlay.width - 32)
         anchors.centerIn: Overlay.overlay
 
         readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
@@ -291,52 +291,33 @@ Item {
                 anchors.fill: parent
                 spacing: 0
 
-                FlatToolBar {
+                PageToolBar {
+                    objectName: "imagesPageToolBar"
+                    title: qsTr("Images")
                     Layout.fillWidth: true
 
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 8
+                    ToolButton {
+                        objectName: "pullImageToolButton"
+                        icon.name: "download"
+                        text: qsTr("Pull Image")
+                        enabled: !apiClient.imageActionBusy
+                        onClicked: imagesPage.openPullImageDialog()
+                    }
 
-                        ToolButton {
-                            text: "☰"
-                            visible: Window.window ? Window.window.narrow : false
-                            Accessible.name: (Window.window && Window.window.drawerOpen)
-                                ? qsTr("Close navigation") : qsTr("Open navigation")
-                            ToolTip.visible: hovered
-                            ToolTip.text: Accessible.name
-                            onClicked: Window.window.toggleDrawer()
-                        }
+                    ToolButton {
+                        objectName: "buildImageToolButton"
+                        icon.name: "run-build"
+                        text: qsTr("Build Image")
+                        enabled: !apiClient.imageActionBusy
+                        onClicked: imagesPage.openBuildImageDialog()
+                    }
 
-                        Label {
-                            text: qsTr("Images")
-                            font.pixelSize: TypeScale.title
-                            Layout.fillWidth: true
-                        }
-
-                        ToolButton {
-                            objectName: "pullImageToolButton"
-                            icon.name: "download"
-                            text: qsTr("Pull Image")
-                            enabled: !apiClient.imageActionBusy
-                            onClicked: imagesPage.openPullImageDialog()
-                        }
-
-                        ToolButton {
-                            objectName: "buildImageToolButton"
-                            icon.name: "run-build"
-                            text: qsTr("Build Image")
-                            enabled: !apiClient.imageActionBusy
-                            onClicked: imagesPage.openBuildImageDialog()
-                        }
-
-                        ToolButton {
-                            objectName: "refreshImagesButton"
-                            icon.name: "view-refresh"
-                            text: qsTr("Refresh")
-                            enabled: !apiClient.imagesBusy
-                            onClicked: apiClient.fetchImages()
-                        }
+                    ToolButton {
+                        objectName: "refreshImagesButton"
+                        icon.name: "view-refresh"
+                        text: qsTr("Refresh")
+                        enabled: !apiClient.imagesBusy
+                        onClicked: apiClient.fetchImages()
                     }
                 }
 

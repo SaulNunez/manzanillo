@@ -38,7 +38,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: 360
+        width: Math.min(360, Overlay.overlay.width - 32)
         anchors.centerIn: Overlay.overlay
 
         // Deleting removes the image, so there's nothing left to show here - pop
@@ -60,7 +60,7 @@ Item {
         objectName: "imageDetailTagDialog"
         modal: true
         title: qsTr("Add tag")
-        width: 400
+        width: Math.min(400, Overlay.overlay.width - 32)
         anchors.centerIn: Overlay.overlay
 
         readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
