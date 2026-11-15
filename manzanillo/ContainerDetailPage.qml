@@ -24,6 +24,12 @@ Item {
         function onContainerLogsErrorOccurred(message) {
             detailErrorLabel.show(message)
         }
+        // The stream stays up while the Logs tab is open, so it can't be part of the
+        // banner's `busy` (that would block every later clear). Clear on (re)start instead.
+        function onContainerLogsStreamingChanged() {
+            if (apiClient.containerLogsStreaming)
+                detailErrorLabel.clear()
+        }
     }
 
     ColumnLayout {
@@ -76,7 +82,7 @@ Item {
             ErrorBanner {
                 id: detailErrorLabel
                 objectName: "containerDetailErrorBanner"
-                busy: apiClient.containerDetailBusy || containerDetailPage.actionBusy || apiClient.containerLogsStreaming
+                busy: apiClient.containerDetailBusy || containerDetailPage.actionBusy
             }
 
             TabBar {
@@ -89,6 +95,7 @@ Item {
 
                 onCurrentIndexChanged: {
                     if (currentIndex === 1) {
+                        detailErrorLabel.clear()
                         apiClient.startContainerLogs(containerDetailPage.containerId)
                     } else {
                         apiClient.stopContainerLogs()
