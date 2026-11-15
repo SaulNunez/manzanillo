@@ -6,6 +6,11 @@ import QtQuick.Layouts
 Window {
     width: 800
     height: 600
+    // Smallest size at which every page, toolbar and dialog still fits: toolbars
+    // overflow their actions into a menu and dialogs shrink to the window, but
+    // below this the content panes themselves stop being usable.
+    minimumWidth: 360
+    minimumHeight: 480
     visible: true
     title: qsTr("Manzanillo")
     // Window.color is a plain canvas fill, independent of the Controls palette

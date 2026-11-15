@@ -39,7 +39,7 @@ Item {
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }
-        width: 360
+        width: Overlay.overlay ? Math.min(360, Overlay.overlay.width - 32) : 360
         anchors.centerIn: Overlay.overlay
 
         // Deleting removes the volume, so there's nothing left to show here - pop

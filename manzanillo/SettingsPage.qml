@@ -33,29 +33,10 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        FlatToolBar {
+        PageToolBar {
+            objectName: "settingsPageToolBar"
+            title: qsTr("Settings")
             Layout.fillWidth: true
-
-            RowLayout {
-                anchors.fill: parent
-                spacing: 8
-
-                ToolButton {
-                    text: "☰"
-                    visible: Window.window ? Window.window.narrow : false
-                    Accessible.name: (Window.window && Window.window.drawerOpen)
-                        ? qsTr("Close navigation") : qsTr("Open navigation")
-                    ToolTip.visible: hovered
-                    ToolTip.text: Accessible.name
-                    onClicked: Window.window.toggleDrawer()
-                }
-
-                Label {
-                    text: qsTr("Settings")
-                    font.pixelSize: TypeScale.title
-                    Layout.fillWidth: true
-                }
-            }
         }
 
         ColumnLayout {

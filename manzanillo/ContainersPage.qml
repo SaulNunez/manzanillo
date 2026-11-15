@@ -80,36 +80,17 @@ Item {
                 anchors.fill: parent
                 spacing: 0
 
-                FlatToolBar {
+                PageToolBar {
+                    objectName: "containersPageToolBar"
+                    title: qsTr("Containers")
                     Layout.fillWidth: true
 
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 8
-
-                        ToolButton {
-                            text: "☰"
-                            visible: Window.window ? Window.window.narrow : false
-                            Accessible.name: (Window.window && Window.window.drawerOpen)
-                                ? qsTr("Close navigation") : qsTr("Open navigation")
-                            ToolTip.visible: hovered
-                            ToolTip.text: Accessible.name
-                            onClicked: Window.window.toggleDrawer()
-                        }
-
-                        Label {
-                            text: qsTr("Containers")
-                            font.pixelSize: TypeScale.title
-                            Layout.fillWidth: true
-                        }
-
-                        ToolButton {
-                            objectName: "refreshContainersButton"
-                            icon.name: "view-refresh"
-                            text: qsTr("Refresh")
-                            enabled: !apiClient.containersBusy
-                            onClicked: apiClient.fetchContainers()
-                        }
+                    ToolButton {
+                        objectName: "refreshContainersButton"
+                        icon.name: "view-refresh"
+                        text: qsTr("Refresh")
+                        enabled: !apiClient.containersBusy
+                        onClicked: apiClient.fetchContainers()
                     }
                 }
 
