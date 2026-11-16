@@ -5,6 +5,8 @@ import QtQuick.Layouts
 Item {
     id: volumeDetailPage
     required property string volumeName
+    // Busy only while this volume's own delete is in flight.
+    readonly property bool actionBusy: Busy.volume(volumeDetailPage.volumeName)
     required property bool inUse
 
     Component.onCompleted: apiClient.fetchVolumeDetail(volumeDetailPage.volumeName)
@@ -19,14 +21,24 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: deleteVolumeDialog
         objectName: "volumeDetailDeleteDialog"
-        modal: true
         title: qsTr("Delete volume")
-        standardButtons: Dialog.Yes | Dialog.No
-        width: 360
-        anchors.centerIn: Overlay.overlay
+        footer: DialogButtonBox {
+            Button {
+                objectName: "volumeDetailDeleteDialogConfirmButton"
+                text: qsTr("Delete")
+                palette.buttonText: Colors.danger
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "volumeDetailDeleteDialogCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+        preferredWidth: 360
 
         // Deleting removes the volume, so there's nothing left to show here - pop
         // back to the list right away instead of waiting to see if it succeeded.
@@ -53,15 +65,14 @@ Item {
                 anchors.fill: parent
                 spacing: 8
 
-                ToolButton {
+                BackButton {
                     objectName: "volumeDetailBackButton"
-                    text: qsTr("< Back")
                     onClicked: volumeDetailPage.StackView.view.pop()
                 }
 
                 Label {
                     text: volumeDetailPage.volumeName
-                    font.pixelSize: TypeScale.title
+                    font.pointSize: TypeScale.title
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
@@ -74,20 +85,43 @@ Item {
             Layout.margins: 12
             spacing: 8
 
+            // Status on the left; Delete is pushed to the far right and tinted so
+            // the destructive action stands apart.
             RowLayout {
+                Layout.fillWidth: true
                 spacing: 8
-
-                Button {
-                    objectName: "volumeDetailDeleteButton"
-                    text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
-                    enabled: !apiClient.volumeActionBusy && !volumeDetailPage.inUse
-                    onClicked: deleteVolumeDialog.open()
-                }
 
                 StatusBadge {
                     text: volumeDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                    tint: volumeDetailPage.inUse ? Colors.success : Colors.disabled
+                    tint: volumeDetailPage.inUse ? Colors.success : Colors.neutral
                 }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Button {
+                    objectName: "volumeDetailDeleteButton"
+                    Accessible.description: deleteReasonLabel.visible ? deleteReasonLabel.text : ""
+                    text: volumeDetailPage.actionBusy ? qsTr("Working...") : qsTr("Delete")
+                    enabled: !volumeDetailPage.actionBusy && !volumeDetailPage.inUse
+                    palette.buttonText: Colors.danger
+                    onClicked: deleteVolumeDialog.open()
+                }
+            }
+
+            // Delete is disabled while the volume is in use; say why in a visible
+            // caption under it (disabled buttons get no hover or keyboard focus).
+            Label {
+                id: deleteReasonLabel
+                objectName: "volumeDetailDeleteReason"
+                visible: volumeDetailPage.inUse
+                text: qsTr("In use by a container — remove the container first")
+                font.pointSize: TypeScale.caption
+                opacity: 0.7
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignRight
+                Layout.fillWidth: true
             }
 
             RowLayout {
@@ -102,12 +136,14 @@ Item {
 
                 Label {
                     text: qsTr("Loading...")
-                    font.pixelSize: TypeScale.body
+                    font.pointSize: TypeScale.body
                 }
             }
 
-            DetailErrorLabel {
+            ErrorBanner {
                 id: detailErrorLabel
+                objectName: "volumeDetailErrorBanner"
+                busy: apiClient.volumeDetailBusy || volumeDetailPage.actionBusy
             }
 
             ScrollView {
@@ -121,33 +157,62 @@ Item {
                     width: detailScrollView.availableWidth
                     spacing: 4
 
-                    Label { text: qsTr("Driver: %1").arg(apiClient.volumeDetail.driver); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Scope: %1").arg(apiClient.volumeDetail.scope); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Created: %1").arg(apiClient.volumeDetail.created); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Mountpoint: %1").arg(apiClient.volumeDetail.mountpoint); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    // Label column (caption) and value column (body), so values line
+                    // up and translations don't carry "Key: %1" layout.
+                    GridLayout {
+                        objectName: "volumeDetailFields"
+                        Layout.fillWidth: true
+                        columns: 2
+                        columnSpacing: 16
+                        rowSpacing: 6
+
+                        FieldLabel { text: qsTr("Driver") }
+                        FieldValue {
+                            objectName: "volumeDetailDriverValue"
+                            text: apiClient.volumeDetail.driver || ""
+                        }
+
+                        FieldLabel { text: qsTr("Scope") }
+                        FieldValue {
+                            objectName: "volumeDetailScopeValue"
+                            text: apiClient.volumeDetail.scope || ""
+                        }
+
+                        FieldLabel { text: qsTr("Created") }
+                        FieldValue {
+                            objectName: "volumeDetailCreatedValue"
+                            text: apiClient.volumeDetail.created || ""
+                        }
+
+                        FieldLabel { text: qsTr("Mountpoint") }
+                        FieldValue {
+                            objectName: "volumeDetailMountpointValue"
+                            text: apiClient.volumeDetail.mountpoint || ""
+                        }
+                    }
 
                     SectionHeading { text: qsTr("Labels") }
                     Label {
                         visible: !apiClient.volumeDetail.labels || apiClient.volumeDetail.labels.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.volumeDetail.labels || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Options") }
                     Label {
                         visible: !apiClient.volumeDetail.options || apiClient.volumeDetail.options.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.volumeDetail.options || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
                 }
             }

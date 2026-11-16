@@ -25,6 +25,47 @@ Item {
         expandedProjects = updated
     }
 
+    function isProjectExpanded(project) {
+        return expandedProjects[project] === true
+    }
+
+    // Every container of a Compose project, regardless of the search filter, so the
+    // header summary and Start all / Stop all always cover the whole project.
+    function projectContainers(project) {
+        const containers = []
+        for (const p of apiClient.composeProjects) {
+            if (p.project === project) {
+                for (const service of p.services) {
+                    containers.push(...service.containers)
+                }
+            }
+        }
+        return containers
+    }
+
+    function isContainerBusy(id) {
+        return Busy.container(id)
+    }
+
+    // Start all / Stop all: act on each container that needs it and isn't already
+    // being worked on; each row then shows its own progress via busyContainerIds and
+    // failures arrive through containerActionErrorOccurred like single actions.
+    function startAllInProject(project) {
+        for (const c of projectContainers(project)) {
+            if (c.state !== "running" && !isContainerBusy(c.id)) {
+                apiClient.startContainer(c.id)
+            }
+        }
+    }
+
+    function stopAllInProject(project) {
+        for (const c of projectContainers(project)) {
+            if (c.state === "running" && !isContainerBusy(c.id)) {
+                apiClient.stopContainer(c.id)
+            }
+        }
+    }
+
     function toggleServiceExpanded(project, service) {
         const key = project + "/" + service
         const updated = Object.assign({}, expandedServices)
@@ -64,7 +105,7 @@ Item {
         return projects
     }
 
-    StackView {
+    PageStack {
         id: containerStack
         objectName: "containerStack"
         anchors.fill: parent
@@ -80,35 +121,17 @@ Item {
                 anchors.fill: parent
                 spacing: 0
 
-                FlatToolBar {
+                PageToolBar {
+                    objectName: "containersPageToolBar"
+                    title: qsTr("Containers")
                     Layout.fillWidth: true
 
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 8
-
-                        ToolButton {
-                            text: "☰"
-                            visible: Window.window ? Window.window.narrow : false
-                            Accessible.name: (Window.window && Window.window.drawerOpen)
-                                ? qsTr("Close navigation") : qsTr("Open navigation")
-                            ToolTip.visible: hovered
-                            ToolTip.text: Accessible.name
-                            onClicked: Window.window.toggleDrawer()
-                        }
-
-                        Label {
-                            text: qsTr("Containers")
-                            font.pixelSize: TypeScale.title
-                            Layout.fillWidth: true
-                        }
-
-                        ToolButton {
-                            icon.name: "view-refresh"
-                            text: apiClient.containersBusy ? qsTr("Loading...") : qsTr("Refresh")
-                            enabled: !apiClient.containersBusy
-                            onClicked: apiClient.fetchContainers()
-                        }
+                    ToolButton {
+                        objectName: "refreshContainersButton"
+                        icon.name: "view-refresh"
+                        text: qsTr("Refresh")
+                        enabled: !apiClient.containersBusy
+                        onClicked: apiClient.fetchContainers()
                     }
                 }
 
@@ -118,37 +141,49 @@ Item {
                     Layout.margins: 12
                     spacing: 8
 
-                    Label {
+                    ErrorBanner {
                         id: errorLabel
-                        visible: false
-                        color: Colors.error
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        objectName: "containersErrorBanner"
+                        busy: apiClient.containersBusy || apiClient.busyContainerIds.length > 0
                     }
 
                     Connections {
                         target: apiClient
                         function onContainersErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                         function onContainerActionErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                     }
 
-                    Label {
-                        text: qsTr("Search")
-                        font.pixelSize: TypeScale.caption
+                    // Ctrl+F (platform Find) jumps to search, but only while this list is
+                    // what's on screen - not from another nav page or a pushed detail page.
+                    Shortcut {
+                        sequences: [StandardKey.Find]
+                        enabled: searchField.visible
+                        onActivated: {
+                            searchField.forceActiveFocus(Qt.ShortcutFocusReason)
+                            searchField.selectAll()
+                        }
                     }
 
                     TextField {
                         id: searchField
                         objectName: "containerSearchField"
                         Layout.fillWidth: true
-                        placeholderText: qsTr("Search containers by name or image…")
+                        placeholderText: qsTr("Search containers by name or image… (Ctrl+F)")
                         Accessible.name: qsTr("Search containers by name or image")
+                        // Esc clears a non-empty query; when already empty the key is left
+                        // unaccepted so window-level Esc handling still sees it.
+                        Keys.onEscapePressed: (event) => {
+                            if (text.length > 0) {
+                                clear()
+                                event.accepted = true
+                            } else {
+                                event.accepted = false
+                            }
+                        }
                         onTextChanged: {
                             apiClient.filteredContainersModel.setFilterText(text)
                             containersPage.searchText = text
@@ -171,13 +206,22 @@ Item {
 
                         Item {
                             Label {
+                                objectName: "containersEmptyLabel"
                                 anchors.centerIn: parent
                                 visible: containersList.count === 0 && !apiClient.containersBusy
                                 text: searchField.text.length > 0
                                     ? qsTr("No containers match \"%1\"").arg(searchField.text)
                                     : qsTr("No containers found")
-                                font.pixelSize: TypeScale.body
+                                font.pointSize: TypeScale.body
                                 opacity: 0.7
+                            }
+
+                            BusyIndicator {
+                                objectName: "containersBusyIndicator"
+                                anchors.centerIn: parent
+                                visible: containersList.count === 0 && apiClient.containersBusy
+                                running: visible
+                                Accessible.name: qsTr("Loading containers")
                             }
 
                             ListView {
@@ -188,6 +232,8 @@ Item {
                                 spacing: 4
                                 model: apiClient.filteredContainersModel
                                 activeFocusOnTab: true
+                                Accessible.role: Accessible.List
+                                Accessible.name: qsTr("Containers")
 
                                 // Keyboard equivalent of tapping a row: arrow keys move currentIndex
                                 // (built into ListView), Enter/Return/Space opens its detail page.
@@ -198,7 +244,7 @@ Item {
                                     }
                                 }
 
-                                delegate: Frame {
+                                delegate: RowCard {
                                     id: containerRowDelegate
                                     required property int index
                                     required property string containerId
@@ -206,78 +252,27 @@ Item {
                                     required property string image
                                     required property string status
                                     required property string state
+                                    readonly property bool busy: containersPage.isContainerBusy(containerRowDelegate.containerId)
+                                    objectName: "containerRow_" + containerRowDelegate.containerId
                                     width: containersList.width
-                                    // Frame only derives its implicit size automatically from a single
-                                    // content child; the focus-ring Rectangle below makes that two, so
-                                    // size it explicitly off the RowLayout instead.
-                                    implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
-
-                                    RowLayout {
-                                        id: contentRow
-                                        anchors.fill: parent
-                                        spacing: 8
-
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 2
-
-                                            RowLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 8
-
-                                                Label {
-                                                    text: containerRowDelegate.names
-                                                    font.bold: true
-                                                    font.pixelSize: TypeScale.body
-                                                    Layout.fillWidth: true
-                                                    elide: Text.ElideRight
-                                                }
-
-                                                StatusBadge {
-                                                    text: containerRowDelegate.state
-                                                    tint: containerRowDelegate.state === "running" ? Colors.success : Colors.disabled
-                                                }
-                                            }
-
-                                            Label {
-                                                text: qsTr("Image: %1").arg(containerRowDelegate.image)
-                                                font.pixelSize: TypeScale.caption
-                                                opacity: 0.7
-                                            }
-
-                                            Label {
-                                                text: qsTr("Status: %1").arg(containerRowDelegate.status)
-                                                font.pixelSize: TypeScale.caption
-                                                opacity: 0.7
-                                            }
-                                        }
-
-                                        Button {
-                                            objectName: "quickActionButton_" + containerRowDelegate.containerId
-                                            text: apiClient.containerActionBusy
-                                                ? qsTr("Working...")
-                                                : (containerRowDelegate.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                            enabled: !apiClient.containerActionBusy
-                                            onClicked: containerRowDelegate.state === "running"
-                                                ? apiClient.stopContainer(containerRowDelegate.containerId)
-                                                : apiClient.startContainer(containerRowDelegate.containerId)
-                                        }
+                                    title: containerRowDelegate.names
+                                    statusText: Colors.containerStateLabel(containerRowDelegate.state)
+                                    statusTint: Colors.containerStateTint(containerRowDelegate.state)
+                                    details: [
+                                        qsTr("Image: %1").arg(containerRowDelegate.image),
+                                        qsTr("Status: %1").arg(containerRowDelegate.status)
+                                    ]
+                                    showFocusRing: containerRowDelegate.ListView.isCurrentItem && containersList.activeFocus
+                                    onActivated: {
+                                        containersList.currentIndex = containerRowDelegate.index
+                                        containersPage.openContainerDetail(containerRowDelegate.containerId)
                                     }
 
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        color: "transparent"
-                                        border.color: palette.highlight
-                                        border.width: 2
-                                        visible: containerRowDelegate.ListView.isCurrentItem && containersList.activeFocus
-                                    }
-
-                                    TapHandler {
-                                        cursorShape: Qt.PointingHandCursor
-                                        onTapped: {
-                                            containersList.currentIndex = containerRowDelegate.index
-                                            containersPage.openContainerDetail(containerRowDelegate.containerId)
-                                        }
+                                    StartStopButton {
+                                        objectName: "quickActionButton_" + containerRowDelegate.containerId
+                                        containerId: containerRowDelegate.containerId
+                                        containerState: containerRowDelegate.state
+                                        busy: containerRowDelegate.busy
                                     }
                                 }
                             }
@@ -288,15 +283,27 @@ Item {
                             clip: true
 
                             ColumnLayout {
+                                objectName: "composeProjectsList"
                                 width: composeScrollView.availableWidth
                                 spacing: 4
+                                Accessible.role: Accessible.List
+                                Accessible.name: qsTr("Compose projects")
+
+                                BusyIndicator {
+                                    objectName: "composeBusyIndicator"
+                                    Layout.alignment: Qt.AlignHCenter
+                                    visible: containersPage.filteredComposeProjects.length === 0 && apiClient.containersBusy
+                                    running: visible
+                                    Accessible.name: qsTr("Loading Compose projects")
+                                }
 
                                 Label {
+                                    objectName: "composeEmptyLabel"
                                     visible: containersPage.filteredComposeProjects.length === 0 && !apiClient.containersBusy
                                     text: searchField.text.length > 0
                                         ? qsTr("No Compose containers match \"%1\"").arg(searchField.text)
                                         : qsTr("No Compose projects found")
-                                    font.pixelSize: TypeScale.body
+                                    font.pointSize: TypeScale.body
                                     opacity: 0.7
                                 }
 
@@ -312,12 +319,71 @@ Item {
                                         Layout.fillWidth: true
                                         spacing: 2
 
-                                        RowLayout {
+                                        readonly property var allContainers: {
+                                            apiClient.composeProjects // re-evaluate on refresh
+                                            return containersPage.projectContainers(projectDelegate.modelData.project)
+                                        }
+                                        readonly property int runningCount: projectDelegate.allContainers.filter(c => c.state === "running").length
+                                        readonly property int busyCount: projectDelegate.allContainers.filter(c => containersPage.isContainerBusy(c.id)).length
+                                        readonly property bool canStartAll: projectDelegate.allContainers.some(c => c.state !== "running" && !containersPage.isContainerBusy(c.id))
+                                        readonly property bool canStopAll: projectDelegate.allContainers.some(c => c.state === "running" && !containersPage.isContainerBusy(c.id))
+                                        readonly property string summary: {
+                                            const running = qsTr("%1/%2 running").arg(projectDelegate.runningCount).arg(projectDelegate.allContainers.length)
+                                            return projectDelegate.busyCount > 0
+                                                ? qsTr("%1, %2 working").arg(running).arg(projectDelegate.busyCount)
+                                                : running
+                                        }
+
+                                        // The whole header toggles the project: click anywhere on it, or
+                                        // Enter/Space (or the accessibility press action) while focused.
+                                        Control {
+                                            id: projectHeader
+                                            objectName: "projectHeader_" + projectDelegate.modelData.project
                                             Layout.fillWidth: true
+                                            activeFocusOnTab: true
+                                            padding: 2
+
+                                            Accessible.role: Accessible.Button
+                                            Accessible.name: qsTr("%1, %2, %3")
+                                                .arg(projectDelegate.modelData.project)
+                                                .arg(projectDelegate.summary)
+                                                .arg(projectDelegate.expanded ? qsTr("expanded") : qsTr("collapsed"))
+                                            Accessible.onPressAction: containersPage.toggleProjectExpanded(projectDelegate.modelData.project)
+
+                                            Keys.onPressed: (event) => {
+                                                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                                                    containersPage.toggleProjectExpanded(projectDelegate.modelData.project)
+                                                    event.accepted = true
+                                                }
+                                            }
+
+                                            background: Rectangle {
+                                                color: "transparent"
+                                                border.color: projectHeader.palette.highlight
+                                                border.width: 2
+                                                visible: projectHeader.activeFocus
+                                            }
+
+                                            contentItem: Item {
+                                                implicitWidth: projectHeaderRow.implicitWidth
+                                                implicitHeight: projectHeaderRow.implicitHeight
+
+                                                // Below the row, so the header's own buttons still get their clicks.
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: containersPage.toggleProjectExpanded(projectDelegate.modelData.project)
+                                                }
+
+                                        RowLayout {
+                                            id: projectHeaderRow
+                                            anchors.fill: parent
 
                                             ToolButton {
                                                 objectName: "projectToggle_" + projectDelegate.index
-                                                text: projectDelegate.expanded ? "▼" : "▶"
+                                                focusPolicy: Qt.NoFocus
+                                                display: AbstractButton.IconOnly
+                                                icon.name: projectDelegate.expanded ? "go-down" : (mirrored ? "go-previous" : "go-next")
                                                 Accessible.name: projectDelegate.expanded
                                                     ? qsTr("Collapse %1").arg(projectDelegate.modelData.project)
                                                     : qsTr("Expand %1").arg(projectDelegate.modelData.project)
@@ -328,9 +394,37 @@ Item {
 
                                             Label {
                                                 text: projectDelegate.modelData.project
-                                                font.bold: true
-                                                font.pixelSize: TypeScale.heading
+                                                font.weight: Font.DemiBold
+                                                font.pointSize: TypeScale.heading
+                                            }
+
+                                            Label {
+                                                objectName: "projectSummary_" + projectDelegate.modelData.project
+                                                text: projectDelegate.summary
+                                                font.pointSize: TypeScale.caption
+                                                opacity: 0.7
                                                 Layout.fillWidth: true
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Button {
+                                                objectName: "startAllButton_" + projectDelegate.modelData.project
+                                                text: qsTr("Start all")
+                                                focusPolicy: Qt.TabFocus
+                                                enabled: projectDelegate.canStartAll
+                                                Accessible.name: qsTr("Start all containers in %1").arg(projectDelegate.modelData.project)
+                                                onClicked: containersPage.startAllInProject(projectDelegate.modelData.project)
+                                            }
+
+                                            Button {
+                                                objectName: "stopAllButton_" + projectDelegate.modelData.project
+                                                text: qsTr("Stop all")
+                                                focusPolicy: Qt.TabFocus
+                                                enabled: projectDelegate.canStopAll
+                                                Accessible.name: qsTr("Stop all containers in %1").arg(projectDelegate.modelData.project)
+                                                onClicked: containersPage.stopAllInProject(projectDelegate.modelData.project)
+                                            }
+                                        }
                                             }
                                         }
 
@@ -357,7 +451,8 @@ Item {
 
                                                         ToolButton {
                                                             objectName: "serviceToggle_" + serviceDelegate.index
-                                                            text: serviceDelegate.expanded ? "▼" : "▶"
+                                                            display: AbstractButton.IconOnly
+                                                            icon.name: serviceDelegate.expanded ? "go-down" : (mirrored ? "go-previous" : "go-next")
                                                             Accessible.name: serviceDelegate.expanded
                                                                 ? qsTr("Collapse %1").arg(serviceDelegate.modelData.service)
                                                                 : qsTr("Expand %1").arg(serviceDelegate.modelData.service)
@@ -381,86 +476,27 @@ Item {
                                                         Repeater {
                                                             model: serviceDelegate.modelData.containers
 
-                                                            delegate: Frame {
+                                                            delegate: RowCard {
                                                                 id: containerDelegate
                                                                 required property var modelData
+                                                                readonly property bool busy: containersPage.isContainerBusy(containerDelegate.modelData.id)
+                                                                objectName: "composeContainerRow_" + containerDelegate.modelData.id
                                                                 Layout.fillWidth: true
                                                                 activeFocusOnTab: true
-                                                                // Frame only derives its implicit size automatically from a single
-                                                                // content child; the focus-ring Rectangle below makes that two, so
-                                                                // size it explicitly off the RowLayout instead.
-                                                                implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
+                                                                title: containerDelegate.modelData.name
+                                                                statusText: Colors.containerStateLabel(containerDelegate.modelData.state)
+                                                                statusTint: Colors.containerStateTint(containerDelegate.modelData.state)
+                                                                details: [
+                                                                    qsTr("Image: %1").arg(containerDelegate.modelData.image),
+                                                                    qsTr("Status: %1").arg(containerDelegate.modelData.status)
+                                                                ]
+                                                                onActivated: containersPage.openContainerDetail(containerDelegate.modelData.id)
 
-                                                                Keys.onPressed: (event) => {
-                                                                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                                                        containersPage.openContainerDetail(containerDelegate.modelData.id)
-                                                                        event.accepted = true
-                                                                    }
-                                                                }
-
-                                                                RowLayout {
-                                                                    id: contentRow
-                                                                    anchors.fill: parent
-                                                                    spacing: 8
-
-                                                                    ColumnLayout {
-                                                                        Layout.fillWidth: true
-                                                                        spacing: 2
-
-                                                                        RowLayout {
-                                                                            Layout.fillWidth: true
-                                                                            spacing: 8
-
-                                                                            Label {
-                                                                                text: containerDelegate.modelData.name
-                                                                                font.bold: true
-                                                                                font.pixelSize: TypeScale.body
-                                                                                Layout.fillWidth: true
-                                                                                elide: Text.ElideRight
-                                                                            }
-
-                                                                            StatusBadge {
-                                                                                text: containerDelegate.modelData.state
-                                                                                tint: containerDelegate.modelData.state === "running" ? Colors.success : Colors.disabled
-                                                                            }
-                                                                        }
-
-                                                                        Label {
-                                                                            text: qsTr("Image: %1").arg(containerDelegate.modelData.image)
-                                                                            font.pixelSize: TypeScale.caption
-                                                                            opacity: 0.7
-                                                                        }
-
-                                                                        Label {
-                                                                            text: qsTr("Status: %1").arg(containerDelegate.modelData.status)
-                                                                            font.pixelSize: TypeScale.caption
-                                                                            opacity: 0.7
-                                                                        }
-                                                                    }
-
-                                                                    Button {
-                                                                        objectName: "quickActionButton_" + containerDelegate.modelData.id
-                                                                        text: apiClient.containerActionBusy
-                                                                            ? qsTr("Working...")
-                                                                            : (containerDelegate.modelData.state === "running" ? qsTr("Stop") : qsTr("Start"))
-                                                                        enabled: !apiClient.containerActionBusy
-                                                                        onClicked: containerDelegate.modelData.state === "running"
-                                                                            ? apiClient.stopContainer(containerDelegate.modelData.id)
-                                                                            : apiClient.startContainer(containerDelegate.modelData.id)
-                                                                    }
-                                                                }
-
-                                                                Rectangle {
-                                                                    anchors.fill: parent
-                                                                    color: "transparent"
-                                                                    border.color: palette.highlight
-                                                                    border.width: 2
-                                                                    visible: containerDelegate.activeFocus
-                                                                }
-
-                                                                TapHandler {
-                                                                    cursorShape: Qt.PointingHandCursor
-                                                                    onTapped: containersPage.openContainerDetail(containerDelegate.modelData.id)
+                                                                StartStopButton {
+                                                                    objectName: "quickActionButton_" + containerDelegate.modelData.id
+                                                                    containerId: containerDelegate.modelData.id
+                                                                    containerState: containerDelegate.modelData.state
+                                                                    busy: containerDelegate.busy
                                                                 }
                                                             }
                                                         }

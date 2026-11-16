@@ -5,6 +5,8 @@ import QtQuick.Layouts
 Item {
     id: imageDetailPage
     required property string imageId
+    // Busy only while this image's own delete/tag is in flight.
+    readonly property bool actionBusy: Busy.image(imageDetailPage.imageId)
     required property string tags
     required property bool inUse
 
@@ -20,14 +22,24 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: deleteImageDialog
         objectName: "imageDetailDeleteDialog"
-        modal: true
         title: qsTr("Delete image")
-        standardButtons: Dialog.Yes | Dialog.No
-        width: 360
-        anchors.centerIn: Overlay.overlay
+        footer: DialogButtonBox {
+            Button {
+                objectName: "imageDetailDeleteDialogConfirmButton"
+                text: qsTr("Delete")
+                palette.buttonText: Colors.danger
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "imageDetailDeleteDialogCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+        preferredWidth: 360
 
         // Deleting removes the image, so there's nothing left to show here - pop
         // back to the list right away instead of waiting to see if it succeeded.
@@ -43,16 +55,32 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: tagImageDialog
         objectName: "imageDetailTagDialog"
-        modal: true
         title: qsTr("Add tag")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        width: 400
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 400
 
-        onAccepted: apiClient.tagImage(imageDetailPage.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+        readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
+
+        footer: DialogButtonBox {
+            Button {
+                objectName: "imageDetailTagOkButton"
+                text: qsTr("OK")
+                enabled: tagImageDialog.inputValid
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "imageDetailTagCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onAccepted: {
+            if (tagImageDialog.inputValid)
+                apiClient.tagImage(imageDetailPage.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+        }
 
         contentItem: ColumnLayout {
             width: tagImageDialog.availableWidth
@@ -67,6 +95,8 @@ Item {
                 id: tagRepositoryField
                 objectName: "imageDetailTagRepositoryField"
                 Layout.fillWidth: true
+                focus: true
+                onAccepted: if (tagImageDialog.inputValid) tagImageDialog.accept()
                 placeholderText: qsTr("e.g. myrepo/myimage")
             }
 
@@ -79,6 +109,7 @@ Item {
                 id: tagTagField
                 objectName: "imageDetailTagTagField"
                 Layout.fillWidth: true
+                onAccepted: if (tagImageDialog.inputValid) tagImageDialog.accept()
                 placeholderText: qsTr("latest")
             }
         }
@@ -95,15 +126,14 @@ Item {
                 anchors.fill: parent
                 spacing: 8
 
-                ToolButton {
+                BackButton {
                     objectName: "imageDetailBackButton"
-                    text: qsTr("< Back")
                     onClicked: imageDetailPage.StackView.view.pop()
                 }
 
                 Label {
                     text: imageDetailPage.tags
-                    font.pixelSize: TypeScale.title
+                    font.pointSize: TypeScale.title
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
@@ -116,13 +146,16 @@ Item {
             Layout.margins: 12
             spacing: 8
 
+            // Non-destructive actions sit on the left; Delete is pushed to the far
+            // right and tinted so it isn't the same weight as Tag beside it.
             RowLayout {
+                Layout.fillWidth: true
                 spacing: 8
 
                 Button {
                     objectName: "imageDetailTagButton"
                     text: qsTr("Tag")
-                    enabled: !apiClient.imageActionBusy
+                    enabled: !imageDetailPage.actionBusy
                     onClicked: {
                         tagRepositoryField.text = ""
                         tagTagField.text = ""
@@ -130,12 +163,32 @@ Item {
                     }
                 }
 
+                Item {
+                    Layout.fillWidth: true
+                }
+
                 Button {
                     objectName: "imageDetailDeleteButton"
-                    text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                    enabled: !apiClient.imageActionBusy
+                    Accessible.description: deleteReasonLabel.visible ? deleteReasonLabel.text : ""
+                    text: imageDetailPage.actionBusy ? qsTr("Working...") : qsTr("Delete")
+                    palette.buttonText: Colors.danger
+                    enabled: !imageDetailPage.actionBusy && !imageDetailPage.inUse
                     onClicked: deleteImageDialog.open()
                 }
+            }
+
+            // Delete is disabled while the image is in use; say why in a visible
+            // caption under it (disabled buttons get no hover or keyboard focus).
+            Label {
+                id: deleteReasonLabel
+                objectName: "imageDetailDeleteReason"
+                visible: imageDetailPage.inUse
+                text: qsTr("In use by a container — remove the container first")
+                font.pointSize: TypeScale.caption
+                opacity: 0.7
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignRight
+                Layout.fillWidth: true
             }
 
             RowLayout {
@@ -150,12 +203,14 @@ Item {
 
                 Label {
                     text: qsTr("Loading...")
-                    font.pixelSize: TypeScale.body
+                    font.pointSize: TypeScale.body
                 }
             }
 
-            DetailErrorLabel {
+            ErrorBanner {
                 id: detailErrorLabel
+                objectName: "imageDetailErrorBanner"
+                busy: apiClient.imageDetailBusy || imageDetailPage.actionBusy
             }
 
             ScrollView {
@@ -169,102 +224,145 @@ Item {
                     width: detailScrollView.availableWidth
                     spacing: 4
 
-                    Label { text: qsTr("Id: %1").arg(apiClient.imageDetail.id); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                    // Label column (caption) and value column (body), so values line
+                    // up and translations don't carry "Key: %1" layout.
+                    GridLayout {
+                        objectName: "imageDetailFields"
+                        Layout.fillWidth: true
+                        columns: 2
+                        columnSpacing: 16
+                        rowSpacing: 6
 
-                    RowLayout {
-                        spacing: 8
+                        FieldLabel { text: qsTr("ID") }
+                        FieldValue {
+                            objectName: "imageDetailIdValue"
+                            text: apiClient.imageDetail.id || ""
+                            copyable: true
+                            copyName: qsTr("image ID")
+                        }
 
-                        Label { text: qsTr("Status:"); font.pixelSize: TypeScale.body }
+                        FieldLabel { text: qsTr("Status"); Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft; Layout.topMargin: 0 }
                         StatusBadge {
                             text: imageDetailPage.inUse ? qsTr("In use") : qsTr("Not in use")
-                            tint: imageDetailPage.inUse ? Colors.success : Colors.disabled
+                            tint: imageDetailPage.inUse ? Colors.success : Colors.neutral
+                        }
+
+                        FieldLabel { text: qsTr("Created") }
+                        FieldValue {
+                            objectName: "imageDetailCreatedValue"
+                            text: apiClient.imageDetail.created || ""
+                        }
+
+                        FieldLabel { text: qsTr("Size") }
+                        FieldValue {
+                            objectName: "imageDetailSizeValue"
+                            text: apiClient.imageDetail.size || ""
+                        }
+
+                        FieldLabel { text: qsTr("Architecture") }
+                        FieldValue {
+                            objectName: "imageDetailArchitectureValue"
+                            text: apiClient.imageDetail.architecture || ""
+                        }
+
+                        FieldLabel { text: qsTr("OS") }
+                        FieldValue {
+                            objectName: "imageDetailOsValue"
+                            text: apiClient.imageDetail.os || ""
+                        }
+
+                        FieldLabel { text: qsTr("Author"); visible: !!apiClient.imageDetail.author }
+                        FieldValue {
+                            objectName: "imageDetailAuthorValue"
+                            text: apiClient.imageDetail.author || ""
+                            visible: !!apiClient.imageDetail.author
+                        }
+
+                        FieldLabel { text: qsTr("Command"); visible: !!apiClient.imageDetail.command }
+                        FieldValue {
+                            objectName: "imageDetailCommandValue"
+                            text: apiClient.imageDetail.command || ""
+                            visible: !!apiClient.imageDetail.command
+                        }
+
+                        FieldLabel { text: qsTr("Working directory"); visible: !!apiClient.imageDetail.workingDir }
+                        FieldValue {
+                            objectName: "imageDetailWorkingDirValue"
+                            text: apiClient.imageDetail.workingDir || ""
+                            visible: !!apiClient.imageDetail.workingDir
                         }
                     }
-
-                    Label { text: qsTr("Created: %1").arg(apiClient.imageDetail.created); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Size: %1").arg(apiClient.imageDetail.size); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Architecture: %1    OS: %2").arg(apiClient.imageDetail.architecture).arg(apiClient.imageDetail.os); font.pixelSize: TypeScale.body }
-                    Label { text: qsTr("Author: %1").arg(apiClient.imageDetail.author); font.pixelSize: TypeScale.body; visible: !!apiClient.imageDetail.author }
-                    Label { text: qsTr("Command: %1").arg(apiClient.imageDetail.command); font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true; visible: !!apiClient.imageDetail.command }
-                    Label { text: qsTr("Working Dir: %1").arg(apiClient.imageDetail.workingDir); font.pixelSize: TypeScale.body; visible: !!apiClient.imageDetail.workingDir }
 
                     SectionHeading { text: qsTr("Tags") }
                     Label {
                         visible: !apiClient.imageDetail.tags || apiClient.imageDetail.tags.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.tags || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Digests") }
                     Label {
                         visible: !apiClient.imageDetail.digests || apiClient.imageDetail.digests.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.digests || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; required property int index; objectName: "imageDigestValue_" + index; text: modelData; copyable: true; copyName: qsTr("digest") }
                     }
 
                     SectionHeading { text: qsTr("Exposed Ports") }
                     Label {
                         visible: !apiClient.imageDetail.exposedPorts || apiClient.imageDetail.exposedPorts.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.exposedPorts || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Environment") }
                     Label {
                         visible: !apiClient.imageDetail.env || apiClient.imageDetail.env.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.env || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Labels") }
                     Label {
                         visible: !apiClient.imageDetail.labels || apiClient.imageDetail.labels.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.labels || []
-                        delegate: Label { required property string modelData; text: modelData; font.pixelSize: TypeScale.body; wrapMode: Text.WrapAnywhere; Layout.fillWidth: true }
+                        delegate: FieldValue { required property string modelData; text: modelData }
                     }
 
                     SectionHeading { text: qsTr("Layers") }
                     Label {
                         visible: !apiClient.imageDetail.layers || apiClient.imageDetail.layers.length === 0
                         text: qsTr("(none)")
-                        font.pixelSize: TypeScale.body
+                        font.pointSize: TypeScale.body
                         opacity: 0.7
                     }
                     Repeater {
                         model: apiClient.imageDetail.layers || []
-                        delegate: Label {
-                            required property string modelData
-                            text: modelData
-                            wrapMode: Text.WrapAnywhere
-                            Layout.fillWidth: true
-                            font.family: "monospace"
-                            font.pixelSize: TypeScale.monospace
-                        }
+                        delegate: FieldValue { required property string modelData; text: modelData; monospace: true }
                     }
                 }
             }

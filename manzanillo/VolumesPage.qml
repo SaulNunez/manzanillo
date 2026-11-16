@@ -17,16 +17,26 @@ Item {
         volumeStack.push("VolumeDetailPage.qml", { volumeName: name, inUse: inUse })
     }
 
-    Dialog {
+    AppDialog {
         id: deleteVolumeDialog
         objectName: "deleteVolumeDialog"
         property string volumeName: ""
 
-        modal: true
         title: qsTr("Delete volume")
-        standardButtons: Dialog.Yes | Dialog.No
-        width: 360
-        anchors.centerIn: Overlay.overlay
+        footer: DialogButtonBox {
+            Button {
+                objectName: "deleteVolumeDialogConfirmButton"
+                text: qsTr("Delete")
+                palette.buttonText: Colors.danger
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "deleteVolumeDialogCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+        preferredWidth: 360
 
         onAccepted: apiClient.deleteVolume(deleteVolumeDialog.volumeName)
 
@@ -37,7 +47,7 @@ Item {
         }
     }
 
-    StackView {
+    PageStack {
         id: volumeStack
         objectName: "volumeStack"
         anchors.fill: parent
@@ -53,35 +63,17 @@ Item {
                 anchors.fill: parent
                 spacing: 0
 
-                FlatToolBar {
+                PageToolBar {
+                    objectName: "volumesPageToolBar"
+                    title: qsTr("Volumes")
                     Layout.fillWidth: true
 
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 8
-
-                        ToolButton {
-                            text: "☰"
-                            visible: Window.window ? Window.window.narrow : false
-                            Accessible.name: (Window.window && Window.window.drawerOpen)
-                                ? qsTr("Close navigation") : qsTr("Open navigation")
-                            ToolTip.visible: hovered
-                            ToolTip.text: Accessible.name
-                            onClicked: Window.window.toggleDrawer()
-                        }
-
-                        Label {
-                            text: qsTr("Volumes")
-                            font.pixelSize: TypeScale.title
-                            Layout.fillWidth: true
-                        }
-
-                        ToolButton {
-                            icon.name: "view-refresh"
-                            text: apiClient.volumesBusy ? qsTr("Loading...") : qsTr("Refresh")
-                            enabled: !apiClient.volumesBusy
-                            onClicked: apiClient.fetchVolumes()
-                        }
+                    ToolButton {
+                        objectName: "refreshVolumesButton"
+                        icon.name: "view-refresh"
+                        text: qsTr("Refresh")
+                        enabled: !apiClient.volumesBusy
+                        onClicked: apiClient.fetchVolumes()
                     }
                 }
 
@@ -91,23 +83,19 @@ Item {
                     Layout.margins: 12
                     spacing: 8
 
-                    Label {
+                    ErrorBanner {
                         id: errorLabel
-                        visible: false
-                        color: Colors.error
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        objectName: "volumesErrorBanner"
+                        busy: apiClient.volumesBusy || apiClient.busyVolumeNames.length > 0
                     }
 
                     Connections {
                         target: apiClient
                         function onVolumesErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                         function onVolumeActionErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                     }
 
@@ -116,11 +104,20 @@ Item {
                         Layout.fillHeight: true
 
                         Label {
+                            objectName: "volumesEmptyLabel"
                             anchors.centerIn: parent
                             visible: volumesList.count === 0 && !apiClient.volumesBusy
                             text: qsTr("No volumes found")
-                            font.pixelSize: TypeScale.body
+                            font.pointSize: TypeScale.body
                             opacity: 0.7
+                        }
+
+                        BusyIndicator {
+                            objectName: "volumesBusyIndicator"
+                            anchors.centerIn: parent
+                            visible: volumesList.count === 0 && apiClient.volumesBusy
+                            running: visible
+                            Accessible.name: qsTr("Loading volumes")
                         }
 
                     ListView {
@@ -131,6 +128,8 @@ Item {
                         spacing: 4
                         model: apiClient.volumesModel
                         activeFocusOnTab: true
+                        Accessible.role: Accessible.List
+                        Accessible.name: qsTr("Volumes")
 
                         // Keyboard equivalent of tapping a row: arrow keys move currentIndex
                         // (built into ListView), Enter/Return/Space opens its detail page.
@@ -141,7 +140,7 @@ Item {
                             }
                         }
 
-                        delegate: Frame {
+                        delegate: RowCard {
                             id: volumeRowDelegate
                             required property int index
                             required property string name
@@ -149,76 +148,32 @@ Item {
                             required property string mountpoint
                             required property string created
                             required property bool inUse
+                            readonly property bool busy: Busy.volume(volumeRowDelegate.name)
+                            objectName: "volumeRow_" + volumeRowDelegate.name
                             width: volumesList.width
-                            // Frame only derives its implicit size automatically from a single
-                            // content child; the focus-ring Rectangle below makes that two, so
-                            // size it explicitly off the RowLayout instead.
-                            implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
-
-                            RowLayout {
-                                id: contentRow
-                                anchors.fill: parent
-                                spacing: 8
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 8
-
-                                        Label {
-                                            text: volumeRowDelegate.name
-                                            font.bold: true
-                                            font.pixelSize: TypeScale.body
-                                            Layout.fillWidth: true
-                                            elide: Text.ElideRight
-                                        }
-
-                                        StatusBadge {
-                                            text: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                            tint: volumeRowDelegate.inUse ? Colors.success : Colors.disabled
-                                        }
-                                    }
-
-                                    Label {
-                                        text: qsTr("Driver: %1    Created: %2").arg(volumeRowDelegate.driver).arg(volumeRowDelegate.created)
-                                        font.pixelSize: TypeScale.caption
-                                        opacity: 0.7
-                                    }
-
-                                    Label {
-                                        text: volumeRowDelegate.mountpoint
-                                        font.pixelSize: TypeScale.caption
-                                        opacity: 0.7
-                                        Layout.fillWidth: true
-                                        elide: Text.ElideRight
-                                    }
-                                }
-
-                                Button {
-                                    objectName: "deleteVolumeButton_" + volumeRowDelegate.name
-                                    text: apiClient.volumeActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                    enabled: !apiClient.volumeActionBusy && !volumeRowDelegate.inUse
-                                    onClicked: volumesPage.confirmDeleteVolume(volumeRowDelegate.name)
-                                }
+                            title: volumeRowDelegate.name
+                            statusText: volumeRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                            statusTint: volumeRowDelegate.inUse ? Colors.success : Colors.neutral
+                            // Delete is disabled while the volume is in use; say why in a
+                            // visible caption (disabled buttons get no hover or focus).
+                            readonly property string deleteDisabledReason: volumeRowDelegate.inUse
+                                ? qsTr("In use by a container — remove the container first") : ""
+                            details: [
+                                [qsTr("Driver: %1").arg(volumeRowDelegate.driver), qsTr("Created: %1").arg(volumeRowDelegate.created)].join(" · "),
+                                volumeRowDelegate.mountpoint
+                            ].concat(volumeRowDelegate.deleteDisabledReason.length > 0 ? [volumeRowDelegate.deleteDisabledReason] : [])
+                            showFocusRing: volumeRowDelegate.ListView.isCurrentItem && volumesList.activeFocus
+                            onActivated: {
+                                volumesList.currentIndex = volumeRowDelegate.index
+                                volumesPage.openVolumeDetail(volumeRowDelegate.name, volumeRowDelegate.inUse)
                             }
 
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                border.color: palette.highlight
-                                border.width: 2
-                                visible: volumeRowDelegate.ListView.isCurrentItem && volumesList.activeFocus
-                            }
-
-                            TapHandler {
-                                cursorShape: Qt.PointingHandCursor
-                                onTapped: {
-                                    volumesList.currentIndex = volumeRowDelegate.index
-                                    volumesPage.openVolumeDetail(volumeRowDelegate.name, volumeRowDelegate.inUse)
-                                }
+                            Button {
+                                objectName: "deleteVolumeButton_" + volumeRowDelegate.name
+                                Accessible.description: volumeRowDelegate.deleteDisabledReason
+                                text: volumeRowDelegate.busy ? qsTr("Working...") : qsTr("Delete")
+                                enabled: !volumeRowDelegate.busy && !volumeRowDelegate.inUse
+                                onClicked: volumesPage.confirmDeleteVolume(volumeRowDelegate.name)
                             }
                         }
                     }

@@ -38,17 +38,27 @@ Item {
     }
 
 
-    Dialog {
+    AppDialog {
         id: deleteImageDialog
         objectName: "deleteImageDialog"
         property string imageId: ""
         property string imageTags: ""
 
-        modal: true
         title: qsTr("Delete image")
-        standardButtons: Dialog.Yes | Dialog.No
-        width: 360
-        anchors.centerIn: Overlay.overlay
+        footer: DialogButtonBox {
+            Button {
+                objectName: "deleteImageDialogConfirmButton"
+                text: qsTr("Delete")
+                palette.buttonText: Colors.danger
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "deleteImageDialogCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+        preferredWidth: 360
 
         onAccepted: apiClient.deleteImage(deleteImageDialog.imageId)
 
@@ -59,17 +69,33 @@ Item {
         }
     }
 
-    Dialog {
+    AppDialog {
         id: pullImageDialog
         objectName: "pullImageDialog"
 
-        modal: true
         title: qsTr("Pull image")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        width: 400
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 400
 
-        onAccepted: apiClient.pullImage(pullReferenceField.text.trim())
+        readonly property bool inputValid: pullReferenceField.text.trim().length > 0
+
+        footer: DialogButtonBox {
+            Button {
+                objectName: "pullImageOkButton"
+                text: qsTr("OK")
+                enabled: pullImageDialog.inputValid
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "pullImageCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onAccepted: {
+            if (pullImageDialog.inputValid)
+                apiClient.pullImage(pullReferenceField.text.trim())
+        }
 
         contentItem: ColumnLayout {
             width: pullImageDialog.availableWidth
@@ -84,22 +110,22 @@ Item {
                 id: pullReferenceField
                 objectName: "pullReferenceField"
                 Layout.fillWidth: true
+                focus: true
                 placeholderText: qsTr("e.g. redis:8.6.2")
+                onAccepted: if (pullImageDialog.inputValid) pullImageDialog.accept()
             }
         }
     }
 
-    Dialog {
+    AppDialog {
         id: buildImageDialog
         objectName: "buildImageDialog"
 
-        modal: true
         title: qsTr("Build image")
         // Only a Close button - building doesn't close the dialog, since the log
         // view needs to stay visible while the build streams in.
         standardButtons: Dialog.Close
-        width: 480
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 480
 
         contentItem: ColumnLayout {
             width: buildImageDialog.availableWidth
@@ -154,7 +180,7 @@ Item {
 
             Label {
                 text: qsTr("Build Log")
-                font.bold: true
+                font.weight: Font.DemiBold
                 Layout.topMargin: 4
                 visible: buildLogArea.text.length > 0
             }
@@ -172,25 +198,41 @@ Item {
                     wrapMode: TextArea.NoWrap
                     text: apiClient.buildLog
                     font.family: "monospace"
-                    font.pixelSize: TypeScale.monospace
+                    font.pointSize: TypeScale.monospace
                     onTextChanged: cursorPosition = length
                 }
             }
         }
     }
 
-    Dialog {
+    AppDialog {
         id: tagImageDialog
         objectName: "tagImageDialog"
         property string imageId: ""
 
-        modal: true
         title: qsTr("Add tag")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        width: 400
-        anchors.centerIn: Overlay.overlay
+        preferredWidth: 400
 
-        onAccepted: apiClient.tagImage(tagImageDialog.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+        readonly property bool inputValid: tagRepositoryField.text.trim().length > 0
+
+        footer: DialogButtonBox {
+            Button {
+                objectName: "tagImageOkButton"
+                text: qsTr("OK")
+                enabled: tagImageDialog.inputValid
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                objectName: "tagImageCancelButton"
+                text: qsTr("Cancel")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onAccepted: {
+            if (tagImageDialog.inputValid)
+                apiClient.tagImage(tagImageDialog.imageId, tagRepositoryField.text.trim(), tagTagField.text.trim())
+        }
 
         contentItem: ColumnLayout {
             width: tagImageDialog.availableWidth
@@ -205,6 +247,8 @@ Item {
                 id: tagRepositoryField
                 objectName: "tagRepositoryField"
                 Layout.fillWidth: true
+                focus: true
+                onAccepted: if (tagImageDialog.inputValid) tagImageDialog.accept()
                 placeholderText: qsTr("e.g. myrepo/myimage")
             }
 
@@ -217,12 +261,13 @@ Item {
                 id: tagTagField
                 objectName: "tagTagField"
                 Layout.fillWidth: true
+                onAccepted: if (tagImageDialog.inputValid) tagImageDialog.accept()
                 placeholderText: qsTr("latest")
             }
         }
     }
 
-    StackView {
+    PageStack {
         id: imageStack
         objectName: "imageStack"
         anchors.fill: parent
@@ -238,49 +283,33 @@ Item {
                 anchors.fill: parent
                 spacing: 0
 
-                FlatToolBar {
+                PageToolBar {
+                    objectName: "imagesPageToolBar"
+                    title: qsTr("Images")
                     Layout.fillWidth: true
 
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 8
+                    ToolButton {
+                        objectName: "pullImageToolButton"
+                        icon.name: "download"
+                        text: qsTr("Pull Image")
+                        enabled: !apiClient.imageActionBusy
+                        onClicked: imagesPage.openPullImageDialog()
+                    }
 
-                        ToolButton {
-                            text: "☰"
-                            visible: Window.window ? Window.window.narrow : false
-                            Accessible.name: (Window.window && Window.window.drawerOpen)
-                                ? qsTr("Close navigation") : qsTr("Open navigation")
-                            ToolTip.visible: hovered
-                            ToolTip.text: Accessible.name
-                            onClicked: Window.window.toggleDrawer()
-                        }
+                    ToolButton {
+                        objectName: "buildImageToolButton"
+                        icon.name: "run-build"
+                        text: qsTr("Build Image")
+                        enabled: !apiClient.imageActionBusy
+                        onClicked: imagesPage.openBuildImageDialog()
+                    }
 
-                        Label {
-                            text: qsTr("Images")
-                            font.pixelSize: TypeScale.title
-                            Layout.fillWidth: true
-                        }
-
-                        ToolButton {
-                            icon.name: "download"
-                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Pull Image")
-                            enabled: !apiClient.imageActionBusy
-                            onClicked: imagesPage.openPullImageDialog()
-                        }
-
-                        ToolButton {
-                            icon.name: "run-build"
-                            text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Build Image")
-                            enabled: !apiClient.imageActionBusy
-                            onClicked: imagesPage.openBuildImageDialog()
-                        }
-
-                        ToolButton {
-                            icon.name: "view-refresh"
-                            text: apiClient.imagesBusy ? qsTr("Loading...") : qsTr("Refresh")
-                            enabled: !apiClient.imagesBusy
-                            onClicked: apiClient.fetchImages()
-                        }
+                    ToolButton {
+                        objectName: "refreshImagesButton"
+                        icon.name: "view-refresh"
+                        text: qsTr("Refresh")
+                        enabled: !apiClient.imagesBusy
+                        onClicked: apiClient.fetchImages()
                     }
                 }
 
@@ -290,23 +319,19 @@ Item {
                     Layout.margins: 12
                     spacing: 8
 
-                    Label {
+                    ErrorBanner {
                         id: errorLabel
-                        visible: false
-                        color: Colors.error
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        objectName: "imagesErrorBanner"
+                        busy: apiClient.imagesBusy || apiClient.imageActionBusy || apiClient.busyImageIds.length > 0
                     }
 
                     Connections {
                         target: apiClient
                         function onImagesErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                         function onImageActionErrorOccurred(message) {
-                            errorLabel.text = message
-                            errorLabel.visible = true
+                            errorLabel.show(message)
                         }
                     }
 
@@ -315,11 +340,20 @@ Item {
                         Layout.fillHeight: true
 
                         Label {
+                            objectName: "imagesEmptyLabel"
                             anchors.centerIn: parent
                             visible: imagesList.count === 0 && !apiClient.imagesBusy
                             text: qsTr("No images found")
-                            font.pixelSize: TypeScale.body
+                            font.pointSize: TypeScale.body
                             opacity: 0.7
+                        }
+
+                        BusyIndicator {
+                            objectName: "imagesBusyIndicator"
+                            anchors.centerIn: parent
+                            visible: imagesList.count === 0 && apiClient.imagesBusy
+                            running: visible
+                            Accessible.name: qsTr("Loading images")
                         }
 
                         ListView {
@@ -330,17 +364,23 @@ Item {
                         spacing: 4
                         model: apiClient.imagesModel
                         activeFocusOnTab: true
+                        Accessible.role: Accessible.List
+                        Accessible.name: qsTr("Images")
 
                         // Keyboard equivalent of tapping a row: arrow keys move currentIndex
-                        // (built into ListView), Enter/Return/Space opens its detail page.
+                        // (built into ListView), Enter/Return/Space opens its detail page and
+                        // the Menu key opens its ⋯ actions menu.
                         Keys.onPressed: (event) => {
                             if (currentItem && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
                                 imagesPage.openImageDetail(currentItem.imageId, currentItem.tags, currentItem.inUse)
                                 event.accepted = true
+                            } else if (currentItem && event.key === Qt.Key_Menu) {
+                                currentItem.openActions()
+                                event.accepted = true
                             }
                         }
 
-                        delegate: Frame {
+                        delegate: RowCard {
                             id: imageRowDelegate
                             required property int index
                             required property string imageId
@@ -348,78 +388,91 @@ Item {
                             required property string size
                             required property string created
                             required property bool inUse
+                            readonly property bool busy: Busy.image(imageRowDelegate.imageId)
+                            objectName: "imageRow_" + imageRowDelegate.imageId
                             width: imagesList.width
-                            // Frame only derives its implicit size automatically from a single
-                            // content child; the focus-ring Rectangle below makes that two, so
-                            // size it explicitly off the RowLayout instead.
-                            implicitHeight: contentRow.implicitHeight + topPadding + bottomPadding
+                            title: imageRowDelegate.tags
+                            statusText: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
+                            statusTint: imageRowDelegate.inUse ? Colors.success : Colors.neutral
+                            // Delete is disabled while the image is in use; say why in a
+                            // visible caption (disabled buttons get no hover or focus).
+                            readonly property string deleteDisabledReason: imageRowDelegate.inUse
+                                ? qsTr("In use by a container — remove the container first") : ""
+                            details: [[qsTr("Size: %1").arg(imageRowDelegate.size), qsTr("Created: %1").arg(imageRowDelegate.created)].join(" · ")]
+                                .concat(imageRowDelegate.deleteDisabledReason.length > 0 ? [imageRowDelegate.deleteDisabledReason] : [])
+                            showFocusRing: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
+                            onActivated: {
+                                imagesList.currentIndex = imageRowDelegate.index
+                                imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags, imageRowDelegate.inUse)
+                            }
 
-                            RowLayout {
-                                id: contentRow
-                                anchors.fill: parent
-                                spacing: 8
+                            // Secondary actions live in a ⋯ menu so opening the image stays
+                            // the row's primary action.
+                            function openActions() {
+                                imageActionsMenu.popup(imageActionsButton, 0, imageActionsButton.height)
+                            }
 
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
+                            // "Working..." on Delete is hidden in the closed menu, so show
+                            // this image's busy state on the row itself.
+                            BusyIndicator {
+                                objectName: "imageBusyIndicator_" + imageRowDelegate.imageId
+                                visible: imageRowDelegate.busy
+                                running: visible
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                Accessible.name: qsTr("Working...")
+                            }
 
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 8
+                            ToolButton {
+                                id: imageActionsButton
+                                objectName: "imageActionsButton_" + imageRowDelegate.imageId
+                                text: "⋯"
+                                focusPolicy: Qt.StrongFocus
+                                Accessible.name: qsTr("Actions for %1").arg(imageRowDelegate.tags)
+                                ToolTip.visible: hovered
+                                ToolTip.text: qsTr("More actions")
+                                onClicked: imageRowDelegate.openActions()
 
-                                        Label {
-                                            text: imageRowDelegate.tags
-                                            font.bold: true
-                                            font.pixelSize: TypeScale.body
-                                            Layout.fillWidth: true
-                                            elide: Text.ElideRight
-                                        }
+                                Menu {
+                                    id: imageActionsMenu
+                                    objectName: "imageActionsMenu_" + imageRowDelegate.imageId
 
-                                        StatusBadge {
-                                            text: imageRowDelegate.inUse ? qsTr("In use") : qsTr("Not in use")
-                                            tint: imageRowDelegate.inUse ? Colors.success : Colors.disabled
-                                        }
-                                    }
-
-                                    Label {
-                                        text: qsTr("Size: %1    Created: %2").arg(imageRowDelegate.size).arg(imageRowDelegate.created)
-                                        font.pixelSize: TypeScale.caption
-                                        opacity: 0.7
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    spacing: 4
-
-                                    Button {
+                                    MenuItem {
                                         objectName: "tagImageButton_" + imageRowDelegate.imageId
                                         text: qsTr("Tag")
-                                        enabled: !apiClient.imageActionBusy
-                                        onClicked: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
+                                        enabled: !imageRowDelegate.busy
+                                        onTriggered: imagesPage.openTagImageDialog(imageRowDelegate.imageId)
                                     }
 
-                                    Button {
+                                    MenuItem {
                                         objectName: "deleteImageButton_" + imageRowDelegate.imageId
-                                        text: apiClient.imageActionBusy ? qsTr("Working...") : qsTr("Delete")
-                                        enabled: !apiClient.imageActionBusy && !imageRowDelegate.inUse
-                                        onClicked: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
+                                        Accessible.description: imageRowDelegate.deleteDisabledReason
+                                        text: imageRowDelegate.busy ? qsTr("Working...") : qsTr("Delete")
+                                        enabled: !imageRowDelegate.busy && !imageRowDelegate.inUse
+                                        onTriggered: imagesPage.confirmDeleteImage(imageRowDelegate.imageId, imageRowDelegate.tags)
                                     }
-                                }
-                            }
 
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                border.color: palette.highlight
-                                border.width: 2
-                                visible: imageRowDelegate.ListView.isCurrentItem && imagesList.activeFocus
-                            }
+                                    // Disabled menu items get no hover or focus, so say why
+                                    // Delete is unavailable right under it.
+                                    // (Wrapped in an Item so it takes no space when hidden.)
+                                    Item {
+                                        visible: imageRowDelegate.deleteDisabledReason.length > 0
+                                        implicitWidth: deleteReasonLabel.implicitWidth
+                                        implicitHeight: visible ? deleteReasonLabel.implicitHeight : 0
 
-                            TapHandler {
-                                cursorShape: Qt.PointingHandCursor
-                                onTapped: {
-                                    imagesList.currentIndex = imageRowDelegate.index
-                                    imagesPage.openImageDetail(imageRowDelegate.imageId, imageRowDelegate.tags, imageRowDelegate.inUse)
+                                        Label {
+                                            id: deleteReasonLabel
+                                            objectName: "imageDeleteReason_" + imageRowDelegate.imageId
+                                            width: parent.width
+                                            text: imageRowDelegate.deleteDisabledReason
+                                            wrapMode: Text.WordWrap
+                                            font.pointSize: TypeScale.caption
+                                            opacity: 0.7
+                                            leftPadding: 12
+                                            rightPadding: 12
+                                            bottomPadding: 4
+                                        }
+                                    }
                                 }
                             }
                         }

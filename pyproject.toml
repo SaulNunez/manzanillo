@@ -13,3 +13,8 @@ files = [
     "manzanillo/SettingsPage.qml",
     "manzanillo/qmldir",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]
+qt_api = "pyside6"

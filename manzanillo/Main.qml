@@ -3,9 +3,14 @@ import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 
-Window {
+ApplicationWindow {
     width: 800
     height: 600
+    // Smallest size at which every page, toolbar and dialog still fits: toolbars
+    // overflow their actions into a menu and dialogs shrink to the window, but
+    // below this the content panes themselves stop being usable.
+    minimumWidth: 360
+    minimumHeight: 480
     visible: true
     title: qsTr("Manzanillo")
     // Window.color is a plain canvas fill, independent of the Controls palette
@@ -14,6 +19,9 @@ Window {
     // Every Frame/Rectangle in the app that doesn't paint its own opaque
     // background shows this color through, so it has to track the palette too.
     color: palette.window
+    // Controls with no explicit size inherit body text from here, so they too
+    // follow the system font live (see TypeScale).
+    font.pointSize: TypeScale.body
 
     // Read once here rather than via the LayoutMirroring attached property on Drawer/StackLayout
     // below - LayoutMirroring only attaches to Items and Windows, not Popups (Drawer).
@@ -53,6 +61,9 @@ Window {
         edge: rtl ? Qt.RightEdge : Qt.LeftEdge
         modal: narrow
         interactive: narrow
+        // Docked, the drawer must not claim Esc/outside presses: an open popup with
+        // CloseOnEscape blocks every window Shortcut outside it (e.g. Ctrl+F).
+        closePolicy: narrow ? (Popup.CloseOnEscape | Popup.CloseOnPressOutside) : Popup.NoAutoClose
 
         Component.onCompleted: if (!narrow) open()
 
@@ -60,12 +71,19 @@ Window {
             id: nav
             objectName: "navList"
             anchors.fill: parent
-            model: [qsTr("Containers"), qsTr("Images"), qsTr("Volumes"), qsTr("Settings")]
+            model: [
+                { label: qsTr("Containers"), icon: "package-x-generic" },
+                { label: qsTr("Images"), icon: "media-optical" },
+                { label: qsTr("Volumes"), icon: "drive-harddisk" },
+                { label: qsTr("Settings"), icon: "preferences-system" }
+            ]
             currentIndex: 0
             delegate: ItemDelegate {
                 objectName: "navItem_" + index
                 width: nav.width
-                text: modelData
+                text: modelData.label
+                icon.name: modelData.icon
+                display: AbstractButton.TextBesideIcon
                 highlighted: ListView.isCurrentItem
                 onClicked: {
                     nav.currentIndex = index

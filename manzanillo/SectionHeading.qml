@@ -22,7 +22,7 @@ ColumnLayout {
 
     Label {
         id: label
-        font.pixelSize: TypeScale.heading
+        font.pointSize: TypeScale.heading
         font.weight: Font.DemiBold
     }
 }

@@ -8,9 +8,18 @@ ImageDetailPage 1.0 ImageDetailPage.qml
 VolumesPage 1.0 VolumesPage.qml
 VolumeDetailPage 1.0 VolumeDetailPage.qml
 SettingsPage 1.0 SettingsPage.qml
-DetailErrorLabel 1.0 DetailErrorLabel.qml
+ErrorBanner 1.0 ErrorBanner.qml
 StatusBadge 1.0 StatusBadge.qml
 SectionHeading 1.0 SectionHeading.qml
 FlatToolBar 1.0 FlatToolBar.qml
+BackButton 1.0 BackButton.qml
 singleton Colors 1.0 Colors.qml
 singleton TypeScale 1.0 TypeScale.qml
+RowCard 1.0 RowCard.qml
+PageToolBar 1.0 PageToolBar.qml
+PageStack 1.0 PageStack.qml
+FieldLabel 1.0 FieldLabel.qml
+FieldValue 1.0 FieldValue.qml
+AppDialog 1.0 AppDialog.qml
+singleton Busy 1.0 Busy.qml
+StartStopButton 1.0 StartStopButton.qml
