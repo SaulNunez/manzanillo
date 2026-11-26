@@ -1,0 +1,47 @@
+name: Snap
+
+on:
+  pull_request:
+    paths:
+      - "snap/**"
+      - "main.py"
+      - "api_client.py"
+      - "manzanillo/**"
+      - ".github/workflows/snap.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      snap: ${{ steps.build.outputs.snap }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: build
+        uses: snapcore/action-build@v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manzanillo-snap
+          path: ${{ steps.build.outputs.snap }}
+
+  publish-edge:
+    # Publishes main to the edge channel once the store credentials secret exists.
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: manzanillo-snap
+      - name: Check for store credentials
+        id: creds
+        run: echo "present=${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.creds.outputs.present == 'true'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ needs.build.outputs.snap }}
+          release: edge
