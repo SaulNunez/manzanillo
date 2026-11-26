@@ -57,6 +57,10 @@ parts:
     source: .
     python-requirements:
       - snap/local/requirements.txt
+    build-environment:
+      # The gnome extension points PYTHONPATH at the SDK's dist-packages, which
+      # makes the part's venv pick up the SDK's old pip and break.
+      - PYTHONPATH: ""
     stage-packages:
       - libxkbcommon-x11-0
       - libxcb-cursor0
