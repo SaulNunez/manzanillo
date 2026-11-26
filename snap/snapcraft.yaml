@@ -53,10 +53,13 @@ plugs:
 
 parts:
   manzanillo:
+    # Only the Python dependencies. The source is snap/local, not the repo root,
+    # because the python plugin would otherwise pip-install the repo's
+    # pyproject.toml, which is a pyside6-project file and not installable.
     plugin: python
-    source: .
+    source: snap/local
     python-requirements:
-      - snap/local/requirements.txt
+      - requirements.txt
     build-environment:
       # The gnome extension points PYTHONPATH at the SDK's dist-packages, which
       # makes the part's venv pick up the SDK's old pip and break.
@@ -73,11 +76,7 @@ parts:
       - libxcb-xkb1
     override-build: |
       craftctl default
-      # The app is a script plus a QML module, not an installable package,
-      # so copy it into the snap next to the virtualenv.
-      install -d "$CRAFT_PART_INSTALL/app"
-      cp -r main.py api_client.py manzanillo "$CRAFT_PART_INSTALL/app/"
-      install -Dm755 snap/local/manzanillo "$CRAFT_PART_INSTALL/bin/manzanillo"
+      install -Dm755 manzanillo "$CRAFT_PART_INSTALL/bin/manzanillo"
     prime:
       # PySide6 bundles Qt; drop tooling the app never runs.
       - -lib/python3.*/site-packages/PySide6/Qt/libexec/qmlls
@@ -87,3 +86,14 @@ parts:
       - -lib/python3.*/site-packages/PySide6/Qt/libexec/rcc
       - -lib/python3.*/site-packages/PySide6/Qt/libexec/uic
       - -lib/python3.*/site-packages/PySide6/scripts
+
+  app:
+    # The app is a script plus a QML module, copied next to the virtualenv.
+    plugin: dump
+    source: .
+    organize:
+      main.py: app/main.py
+      api_client.py: app/api_client.py
+      manzanillo: app/manzanillo
+    stage:
+      - app
