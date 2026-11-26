@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Placeholder icon: a stack of shipping containers at the waterline. -->
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="#0f4c75"/>
+  <g stroke="#0b2e47" stroke-width="4">
+    <rect x="44" y="132" width="80" height="44" rx="4" fill="#f28c28"/>
+    <rect x="132" y="132" width="80" height="44" rx="4" fill="#3bb273"/>
+    <rect x="88" y="80" width="80" height="44" rx="4" fill="#e1bc29"/>
+  </g>
+  <g stroke="#0b2e47" stroke-width="3" opacity="0.5">
+    <path d="M64 138v32M84 138v32M104 138v32M152 138v32M172 138v32M192 138v32M108 86v32M128 86v32M148 86v32"/>
+  </g>
+  <path d="M24 196c20 0 20-10 40-10s20 10 40 10 20-10 40-10 20 10 40 10 20-10 40-10v46H24z" fill="#5fb3e6"/>
+</svg>

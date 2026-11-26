@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Manzanillo
+GenericName=Docker Manager
+Comment=Manage Docker containers, images and volumes
+Exec=manzanillo
+Icon=${SNAP}/meta/gui/manzanillo.svg
+Terminal=false
+Categories=Development;Utility;
+Keywords=docker;container;image;volume;
+StartupWMClass=manzanillo

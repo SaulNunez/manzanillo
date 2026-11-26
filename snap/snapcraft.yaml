@@ -1,0 +1,99 @@
+name: manzanillo
+title: Manzanillo
+base: core24
+version: '0.1.0'
+summary: A desktop client for managing Docker containers, images and volumes
+description: |
+  Manzanillo is a Qt Quick desktop app for managing your local Docker
+  engine: start and stop containers, read their logs, inspect and remove
+  images and volumes.
+
+  It talks to the Docker Engine API over its Unix socket. After installing,
+  connect the interface that matches how Docker is installed:
+
+    # Docker from the Snap Store
+    sudo snap connect manzanillo:docker docker:docker-daemon
+
+    # Docker from apt / docker.com packages (socket at /var/run/docker.sock)
+    sudo snap connect manzanillo:docker-socket
+
+  Your user must also be allowed to use the Docker socket (for example by
+  being in the `docker` group).
+grade: stable
+confinement: strict
+
+platforms:
+  amd64:
+  arm64:
+
+apps:
+  manzanillo:
+    command: bin/manzanillo
+    desktop: meta/gui/manzanillo.desktop
+    extensions: [gnome]
+    environment:
+      # main.py defaults this to xdgdesktopportal; keep that inside the snap too.
+      QT_QPA_PLATFORMTHEME: xdgdesktopportal
+      # Prefer Wayland, fall back to X11.
+      QT_QPA_PLATFORM: wayland;xcb
+    plugs:
+      - home
+      - network
+      # Docker installed as a snap.
+      - docker
+      # Docker installed from apt or docker.com packages.
+      - docker-socket
+
+plugs:
+  docker-socket:
+    interface: system-files
+    write:
+      - /run/docker.sock
+      - /var/run/docker.sock
+
+parts:
+  manzanillo:
+    # Only the Python dependencies. The source is snap/local, not the repo root,
+    # because the python plugin would otherwise pip-install the repo's
+    # pyproject.toml, which is a pyside6-project file and not installable.
+    plugin: python
+    source: snap/local
+    python-requirements:
+      - requirements.txt
+    build-environment:
+      # The gnome extension points PYTHONPATH at the SDK's dist-packages, which
+      # makes the part's venv pick up the SDK's old pip and break.
+      - PYTHONPATH: ""
+    stage-packages:
+      - libxkbcommon-x11-0
+      - libxcb-cursor0
+      - libxcb-icccm4
+      - libxcb-image0
+      - libxcb-keysyms1
+      - libxcb-render-util0
+      - libxcb-shape0
+      - libxcb-xinerama0
+      - libxcb-xkb1
+    override-build: |
+      craftctl default
+      install -Dm755 manzanillo "$CRAFT_PART_INSTALL/bin/manzanillo"
+    prime:
+      # PySide6 bundles Qt; drop tooling the app never runs.
+      - -lib/python3.*/site-packages/PySide6/Qt/libexec/qmlls
+      - -lib/python3.*/site-packages/PySide6/Qt/libexec/qmllint
+      - -lib/python3.*/site-packages/PySide6/Qt/libexec/qmlformat
+      - -lib/python3.*/site-packages/PySide6/Qt/libexec/qmlcachegen
+      - -lib/python3.*/site-packages/PySide6/Qt/libexec/rcc
+      - -lib/python3.*/site-packages/PySide6/Qt/libexec/uic
+      - -lib/python3.*/site-packages/PySide6/scripts
+
+  app:
+    # The app is a script plus a QML module, copied next to the virtualenv.
+    plugin: dump
+    source: .
+    organize:
+      main.py: app/main.py
+      api_client.py: app/api_client.py
+      manzanillo: app/manzanillo
+    stage:
+      - app

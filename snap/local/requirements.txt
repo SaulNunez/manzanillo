@@ -1,0 +1,6 @@
+# Runtime deps for the snap. PySide6-Essentials has every Qt module the app
+# uses (QtQml, QtQuick, QtQuickControls2, QtWidgets) and is far smaller than
+# the full PySide6 wheel.
+PySide6-Essentials
+httpx
+qasync
